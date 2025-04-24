@@ -1,0 +1,11 @@
+# Basic settings
+set autoindent
+set tabsize 4
+set linenumbers
+set mouse
+set constantshow
+set indicator
+
+# Enable syntax highlighting
+include "/usr/share/nano/*.nanorc"  # Linux path
+include "/opt/homebrew/share/nano/*.nanorc"  # macOS Homebrew path
