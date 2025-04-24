@@ -6,9 +6,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/utils/common.sh"
 
-INSTALLER="${1:-user-space}"
-ACTION="${2:-install}"
-CONFIG_FILE="${3:-}"
+ACTION="${1:-install}"
+CONFIG_FILE="${2:-}"
 MICROMAMBA_ROOT="$HOME/micromamba"
 BIN_DIR="${HOME}/.local/bin"
 
@@ -58,8 +57,8 @@ install_micromamba() {
   fi
   
   # Initialize micromamba
-  "$BIN_DIR/micromamba" shell init -s bash -p "$MICROMAMBA_ROOT"
-  "$BIN_DIR/micromamba" shell init -s zsh -p "$MICROMAMBA_ROOT"
+  "$BIN_DIR/micromamba" shell init -s bash "$MICROMAMBA_ROOT"
+  "$BIN_DIR/micromamba" shell init -s zsh "$MICROMAMBA_ROOT"
   
   # Add micromamba to the current PATH if not already there
   if ! echo "$PATH" | tr ':' '\n' | grep -q "$BIN_DIR"; then
