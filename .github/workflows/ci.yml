@@ -32,10 +32,18 @@ jobs:
         run: |
           source ~/.zshrc || true
           # Check that key components are installed
+          command -v zsh && echo "zsh installed ✓"
+          command -v tmux && echo "tmux installed ✓"
+          command -v git && echo "git installed ✓"
+          command -v aws && echo "awscli installed ✓"
+          command -v docker && echo "docker installed ✓"
+          command -v micromamba && echo "micromamba installed ✓"
+          command -v fzf && echo "fzf installed ✓"
+          command -v bat && echo "bat installed ✓"
+          (command -v eza || command -v exa) && echo "eza/exa installed ✓"
+          command -v zoxide && echo "zoxide installed ✓"
           test -d ~/.oh-my-zsh && echo "Oh My Zsh installed ✓"
-          test -d ~/.micromamba && echo "Micromamba installed ✓"
-          command -v fzf >/dev/null && echo "FZF installed ✓"
-          command -v bat >/dev/null && echo "bat installed ✓"
+          test -f ~/.p10k.zsh && echo "Powerlevel10k config present ✓"
   
   test-macos:
     runs-on: macos-latest
@@ -61,7 +69,15 @@ jobs:
         run: |
           source ~/.zshrc || true
           # Check that key components are installed
+          command -v zsh && echo "zsh installed ✓"
+          command -v tmux && echo "tmux installed ✓"
+          command -v git && echo "git installed ✓"
+          command -v aws && echo "awscli installed ✓"
+          command -v docker && echo "docker installed ✓"
+          command -v micromamba && echo "micromamba installed ✓"
+          command -v fzf && echo "fzf installed ✓"
+          command -v bat && echo "bat installed ✓"
+          (command -v eza || command -v exa) && echo "eza/exa installed ✓"
+          command -v zoxide && echo "zoxide installed ✓"
           test -d ~/.oh-my-zsh && echo "Oh My Zsh installed ✓"
-          test -d ~/.micromamba && echo "Micromamba installed ✓"
-          command -v fzf >/dev/null && echo "FZF installed ✓"
-          command -v bat >/dev/null && echo "bat installed ✓"
+          test -f ~/.p10k.zsh && echo "Powerlevel10k config present ✓"

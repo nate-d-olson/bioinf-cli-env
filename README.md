@@ -1,5 +1,7 @@
 # Bioinformatics CLI Environment
 
+![CI](https://github.com/yourusername/bioinf-cli-env/actions/workflows/ci.yml/badge.svg)
+
 A cross-platform synchronized productivity-focused CLI setup for bioinformaticians.
 
 ## Overview
