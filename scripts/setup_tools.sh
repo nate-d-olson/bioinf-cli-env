@@ -41,7 +41,6 @@ case "$INSTALLER" in
     # Install modern replacements for common tools
     sudo apt update
     sudo apt install -y \
-      exa \
       bat \
       ripgrep \
       fd-find \
@@ -70,7 +69,7 @@ case "$INSTALLER" in
     # Install tools from GitHub releases
     
     # Install eza (or exa for older versions)
-    if ! command -v eza &>/dev/null && ! command -v exa &>/dev/null; then
+    if ! command -v eza &>/dev/null ; then
       echo "Installing eza..."
       
       if [[ "$(uname)" == "Darwin" ]]; then
