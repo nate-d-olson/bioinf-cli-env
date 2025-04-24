@@ -18,6 +18,8 @@ ask() {
   [[ "$yn" != [Nn]* ]]
 }
 
+echo "📦 Starting bioinf-cli-env installation..."
+
 # Detect OS and installer
 if [[ "$(uname)" == "Darwin" ]]; then
   INSTALLER="brew"

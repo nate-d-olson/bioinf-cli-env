@@ -5,19 +5,24 @@ channels:
   - defaults
 dependencies:
   # Core bioinformatics tools
-  # - snakemake
-  # - nextflow
   - samtools
+  - bcftools
   - bedtools
   - bwa
-  # - bowtie2
   - minimap2
-  - bcftools
+  - dipcall
+  - seqtk
+  - truvari
+  - seqkit
+  - csvkit
+  # Additional tools can be uncommented as needed
+  # - snakemake
+  # - nextflow
+  # - bowtie2
   # - vcftools
   # - fastp
   # - fastqc
   # - multiqc
-  # - seqtk
   # - igv
   # # Python data science
   # - python=3.10

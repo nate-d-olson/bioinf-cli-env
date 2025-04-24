@@ -12,8 +12,6 @@ plugins=(
   zsh-autosuggestions
   zsh-syntax-highlighting
   zsh-completions
-  colored-man-pages
-  fzf
 )
 
 # Load Oh My Zsh
@@ -65,16 +63,16 @@ alias nano='nano -Y syntax -c'
 # Modern CLI tools
 if command -v eza &>/dev/null; then
   alias ls="eza"
-  alias ll="eza -lah"
+  alias ll="eza -l --git"
   alias la="eza -la"
 elif command -v exa &>/dev/null; then
   alias ls="exa"
-  alias ll="exa -lah"
+  alias ll="exa -l --git"
   alias la="exa -la"
 fi
 
 if command -v bat &>/dev/null; then
-  alias cat="bat"
+  alias cat="bat --paging=never"
 elif command -v batcat &>/dev/null; then
   alias cat="batcat"
 fi
@@ -87,12 +85,20 @@ fi
 
 # Slurm aliases (only on cluster)
 if command -v squeue &>/dev/null; then
+  alias sb='sbatch'
   alias sq='squeue -u $USER'
   alias si='sinfo'
   alias sc='scancel'
   alias sj='sacct -j'
+  alias sr='srun --pty'
   alias srun1='srun --pty -c 1 --mem=8G -t 0-2:00 /bin/bash'
   alias srun8='srun --pty -c 8 --mem=32G -t 0-8:00 /bin/bash'
+
+  # Custom completion for scancel using squeue
+  function _scancel {
+    _describe 'job' "($(squeue -h -o '%i:%T-%j' -u $USER))"
+  }
+  compdef _scancel scancel
 fi
 
 # Helper functions
@@ -105,3 +111,15 @@ if command -v fzf &>/dev/null && [[ -f ~/.ssh/config ]]; then
   function sshf() { ssh $(grep -oP '(?<=Host )\S+' ~/.ssh/config | fzf); }
   alias ssh=sshf
 fi
+
+# LLM function
+if command -v az &>/dev/null; then
+  function llm() {
+    az openai chat-completion create --deployment my-deployment \
+      --messages "[{\"role\":\"user\",\"content\":\"$*\"}]" \
+      --query "choices[0].message.content" -o tsv
+  }
+fi
+
+# Source color palette settings
+[[ -f ~/.p9k_palette ]] && source ~/.p9k_palette
