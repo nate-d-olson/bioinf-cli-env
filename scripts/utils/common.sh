@@ -9,47 +9,115 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $*" >&2
+# Logging configuration
+: "${LOG_LEVEL:=INFO}"
+: "${LOG_FILE:=${HOME}/.local/log/bioinf-cli-env.log}"
+mkdir -p "$(dirname "$LOG_FILE")"
+
+# Temporary files tracking
+declare -a TEMP_FILES=()
+declare -a TEMP_DIRS=()
+
+# Signal handling for cleanup
+cleanup() {
+    local exit_code=$?
+    log_info "Performing cleanup..."
+    
+    # Remove temporary files
+    for file in "${TEMP_FILES[@]}"; do
+        if [[ -f "$file" ]]; then
+            rm -f "$file"
+            log_debug "Removed temporary file: $file"
+        fi
+    done
+    
+    # Remove temporary directories
+    for dir in "${TEMP_DIRS[@]}"; do
+        if [[ -d "$dir" ]]; then
+            rm -rf "$dir"
+            log_debug "Removed temporary directory: $dir"
+        fi
+    done
+    
+    exit "$exit_code"
 }
 
-log_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $*" >&2
+trap cleanup EXIT
+trap 'trap - EXIT; cleanup; exit 1' INT TERM
+
+# Enhanced logging with levels and file output
+log() {
+    local level=$1
+    shift
+    local message="$*"
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    # Log to file
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
+    
+    # Log to console based on level
+    case "$level" in
+        ERROR)
+            [[ "$LOG_LEVEL" =~ ^(ERROR|WARN|INFO|DEBUG)$ ]] && echo -e "${RED}[ERROR]${NC} $message" >&2
+            ;;
+        WARN)
+            [[ "$LOG_LEVEL" =~ ^(WARN|INFO|DEBUG)$ ]] && echo -e "${YELLOW}[WARN]${NC} $message" >&2
+            ;;
+        INFO)
+            [[ "$LOG_LEVEL" =~ ^(INFO|DEBUG)$ ]] && echo -e "${BLUE}[INFO]${NC} $message"
+            ;;
+        DEBUG)
+            [[ "$LOG_LEVEL" == "DEBUG" ]] && echo -e "[DEBUG] $message"
+            ;;
+    esac
 }
 
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $*"
-}
+log_error() { log ERROR "$@"; }
+log_warning() { log WARN "$@"; }
+log_info() { log INFO "$@"; }
+log_debug() { log DEBUG "$@"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $*"; }
 
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $*"
-}
-
-# Error handling
+# Enhanced error handling with stack trace
 die() {
-    log_error "$*"
-    exit 1
+    local message=$1
+    local code=${2:-1}
+    local stack
+    
+    # Generate stack trace
+    stack=$(
+        local frame=0
+        while caller $frame; do
+            ((frame++))
+        done
+    )
+    
+    log_error "$message"
+    log_debug "Stack trace:\n$stack"
+    exit "$code"
 }
 
-# Command existence check
-cmd_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-# Platform detection
+# Enhanced platform detection
 detect_platform() {
     local os
     local arch
+    local variant=""
     
+    # Detect OS
     case "$(uname -s)" in
         Darwin*)
-            os="macos"
+            os="darwin"
+            # Detect macOS version
+            version=$(sw_vers -productVersion)
+            variant="macOS_${version%%.*}"
             ;;
         Linux*)
-            if [ -f /etc/os-release ]; then
-                os=$(awk -F= '/^ID=/{print $2}' /etc/os-release | tr -d '"')
-            else
-                os="linux"
+            os="linux"
+            # Detect Linux distribution
+            if [[ -f /etc/os-release ]]; then
+                source /etc/os-release
+                variant="${ID}_${VERSION_ID%%.*}"
             fi
             ;;
         *)
@@ -57,27 +125,36 @@ detect_platform() {
             ;;
     esac
     
+    # Detect architecture with support for ARM
     case "$(uname -m)" in
-        x86_64|amd64)
-            arch="x86_64"
+        x86_64*)
+            # Check for Rosetta on macOS
+            if [[ "$os" == "darwin" ]] && sysctl -n sysctl.proc_translated >/dev/null 2>&1; then
+                arch="arm64"
+            else
+                arch="amd64"
+            fi
             ;;
-        aarch64|arm64)
+        aarch64*|arm64*)
             arch="arm64"
             ;;
+        armv7*|armv8*)
+            arch="arm"
+            ;;
         *)
-            arch="unknown"
+            arch="$(uname -m)"
             ;;
     esac
     
-    echo "${os}-${arch}"
+    echo "${os}_${arch}${variant:+_}${variant}"
 }
 
 get_os() {
-    echo "$1" | cut -d'-' -f1
+    echo "$1" | cut -d'_' -f1
 }
 
 get_arch() {
-    echo "$1" | cut -d'-' -f2
+    echo "$1" | cut -d'_' -f2
 }
 
 # State management
@@ -114,6 +191,37 @@ load_config() {
     
     # Source in current shell if validation passed
     source "$config_file"
+}
+
+# Configuration validation
+validate_config() {
+    local config_file=$1
+    local schema_file=${2:-""}
+    
+    if [[ ! -f "$config_file" ]]; then
+        log_error "Configuration file not found: $config_file"
+        return 1
+    fi
+    
+    # Basic syntax check
+    if ! bash -n "$config_file"; then
+        log_error "Invalid shell syntax in configuration file"
+        return 1
+    fi
+    
+    # Schema validation if provided
+    if [[ -n "$schema_file" && -f "$schema_file" ]]; then
+        if command -v jq >/dev/null; then
+            if ! jq -e --argfile schema "$schema_file" '. as $config | $schema' "$config_file" >/dev/null; then
+                log_error "Configuration validation failed against schema"
+                return 1
+            fi
+        else
+            log_warning "jq not found, skipping schema validation"
+        fi
+    fi
+    
+    return 0
 }
 
 # Package management detection
@@ -173,9 +281,25 @@ add_to_path() {
 
 # File operations
 backup_file() {
-    local file="$1"
-    if [[ -f "$file" ]]; then
-        cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)"
+    local file=$1
+    local backup_dir=${2:-"${HOME}/.local/backup/bioinf-cli-env"}
+    local timestamp
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    
+    if [[ ! -f "$file" ]]; then
+        log_warning "File not found for backup: $file"
+        return 1
+    fi
+    
+    mkdir -p "$backup_dir"
+    local backup_file="${backup_dir}/$(basename "$file").${timestamp}"
+    
+    if cp -p "$file" "$backup_file"; then
+        log_info "Created backup: $backup_file"
+        echo "$backup_file"
+    else
+        log_error "Failed to create backup of $file"
+        return 1
     fi
 }
 
@@ -188,4 +312,43 @@ restore_file() {
         return 0
     fi
     return 1
+}
+
+# Temporary file management
+create_temp_file() {
+    local template=${1:-"tmp.XXXXXXXXXX"}
+    local tmp_file
+    tmp_file=$(mktemp -t "$template")
+    TEMP_FILES+=("$tmp_file")
+    echo "$tmp_file"
+}
+
+create_temp_dir() {
+    local template=${1:-"tmp.XXXXXXXXXX"}
+    local tmp_dir
+    tmp_dir=$(mktemp -d -t "$template")
+    TEMP_DIRS+=("$tmp_dir")
+    echo "$tmp_dir"
+}
+
+# Progress indicator
+show_progress() {
+    local current=$1
+    local total=$2
+    local width=${3:-50}
+    local message=${4:-"Progress"}
+    
+    local percentage=$((current * 100 / total))
+    local filled=$((width * current / total))
+    local empty=$((width - filled))
+    
+    printf "\r%s [%s%s] %d%%" \
+        "$message" \
+        "$(printf '#%.0s' $(seq 1 "$filled"))" \
+        "$(printf '.%.0s' $(seq 1 "$empty"))" \
+        "$percentage"
+    
+    if ((current == total)); then
+        echo
+    fi
 }
