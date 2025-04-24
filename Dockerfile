@@ -1,31 +1,46 @@
-# Use Ubuntu LTS as a base
+# Bioinformatics CLI Environment Dockerfile
 FROM ubuntu:22.04
 
+# Set non-interactive installation
 ENV DEBIAN_FRONTEND=noninteractive
-ENV MAMBA_ROOT_PREFIX=/opt/micromamba
 
-# 1) Install system prerequisites
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      ca-certificates curl git zsh wget bzip2 \
-      build-essential procps && \
-    rm -rf /var/lib/apt/lists/*
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    wget \
+    zsh \
+    nano \
+    tmux \
+    python3 \
+    python3-pip \
+    jq \
+    parallel \
+    && rm -rf /var/lib/apt/lists/*
 
-# 2) Install micromamba (user‑space conda)
-RUN mkdir -p $MAMBA_ROOT_PREFIX && \
-    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest \
-      | tar -xvj -C $MAMBA_ROOT_PREFIX --strip-components=1 bin/micromamba
+# Create and switch to a non-root user
+ARG USERNAME=biouser
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
 
-ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && apt-get update \
+    && apt-get install -y sudo \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
 
-# 3) Copy your installer and configs
-WORKDIR /root
-COPY . /root/bioinf-shell-setup
-WORKDIR /root/bioinf-shell-setup
+USER $USERNAME
+WORKDIR /home/$USERNAME
 
-# 4) Make sure install.sh is executable
-RUN chmod +x install.sh
+# Copy the environment files
+COPY --chown=$USERNAME:$USERNAME . /home/$USERNAME/bioinf-cli-env
 
-# 5) Default entrypoint: start zsh after install
-ENTRYPOINT [ "zsh", "-c" ]
-CMD [ "echo 'Container ready. Run install.sh to provision the env.'; exec zsh" ]
+# Install the environment
+RUN cd /home/$USERNAME/bioinf-cli-env && \
+    ./install.sh < <(echo -e "y\ny\ny\nn\ny\n") && \
+    echo "source ~/.zshrc" >> ~/.bashrc
+
+# Default command
+CMD ["zsh"]
+EOF
