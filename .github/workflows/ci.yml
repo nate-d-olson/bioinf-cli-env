@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  test-ubuntu:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup CI config
+        run: |
+          cp config.ini.template config.ini
+          # Configure for non-interactive installation
+          sed -i 's/INSTALL_MICROMAMBA=.*/INSTALL_MICROMAMBA=true/' config.ini
+          sed -i 's/INSTALL_OMZ=.*/INSTALL_OMZ=true/' config.ini
+          sed -i 's/INSTALL_TOOLS=.*/INSTALL_TOOLS=true/' config.ini
+          sed -i 's/INSTALL_JOB_MONITORING=.*/INSTALL_JOB_MONITORING=true/' config.ini
+          cat config.ini
+      
+      - name: Run installation script
+        run: |
+          chmod +x install.sh
+          ./install.sh
+        
+      - name: Verify installation
+        run: |
+          source ~/.zshrc || true
+          # Check that key components are installed
+          test -d ~/.oh-my-zsh && echo "Oh My Zsh installed ✓"
+          test -d ~/.micromamba && echo "Micromamba installed ✓"
+          command -v fzf >/dev/null && echo "FZF installed ✓"
+          command -v bat >/dev/null && echo "bat installed ✓"
+  
+  test-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup CI config
+        run: |
+          cp config.ini.template config.ini
+          # Configure for non-interactive installation
+          sed -i '' 's/INSTALL_MICROMAMBA=.*/INSTALL_MICROMAMBA=true/' config.ini
+          sed -i '' 's/INSTALL_OMZ=.*/INSTALL_OMZ=true/' config.ini
+          sed -i '' 's/INSTALL_TOOLS=.*/INSTALL_TOOLS=true/' config.ini
+          sed -i '' 's/INSTALL_JOB_MONITORING=.*/INSTALL_JOB_MONITORING=true/' config.ini
+          cat config.ini
+      
+      - name: Run installation script
+        run: |
+          chmod +x install.sh
+          ./install.sh
+        
+      - name: Verify installation
+        run: |
+          source ~/.zshrc || true
+          # Check that key components are installed
+          test -d ~/.oh-my-zsh && echo "Oh My Zsh installed ✓"
+          test -d ~/.micromamba && echo "Micromamba installed ✓"
+          command -v fzf >/dev/null && echo "FZF installed ✓"
+          command -v bat >/dev/null && echo "bat installed ✓"

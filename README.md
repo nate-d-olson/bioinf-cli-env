@@ -9,6 +9,7 @@ This project provides a standardized, cross-platform command line environment op
 ## Features
 
 - **Cross-platform compatibility**: Works on macOS, Ubuntu Linux, and SLURM-based clusters
+- **Continuous Integration**: Automatically tested on Ubuntu 24.04 and macOS environments
 - **Enhanced ZSH**: Using Oh My Zsh and Powerlevel10k for a beautiful, informative prompt
 - **Productivity tools**: Autosuggestions, syntax highlighting, fuzzy search, and directory jumping
 - **Tool integrations**: AWS, Git, Docker, and Micromamba with tab completion
