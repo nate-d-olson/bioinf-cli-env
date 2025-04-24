@@ -64,9 +64,10 @@ if ask "Install micromamba and bioinformatics environment?"; then
   bash "$SCRIPTS_DIR/setup_micromamba.sh" env-create "$CONFIG_DIR/micromamba-config.yaml"
 fi
 
-if ask "Install Azure OpenAI CLI integration?"; then
-  bash "$SCRIPTS_DIR/setup_llm.sh"
-fi
+## %%TODO%% fix not currently working in docker
+# if ask "Install Azure OpenAI CLI integration?"; then
+#  bash "$SCRIPTS_DIR/setup_llm.sh"
+# fi
 
 if ask "Install job monitoring tools?"; then
   bash "$SCRIPTS_DIR/setup_monitoring.sh"
