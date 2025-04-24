@@ -5,38 +5,38 @@ channels:
   - defaults
 dependencies:
   # Core bioinformatics tools
-  - snakemake
-  - nextflow
+  # - snakemake
+  # - nextflow
   - samtools
   - bedtools
   - bwa
-  - bowtie2
+  # - bowtie2
   - minimap2
   - bcftools
-  - vcftools
-  - fastp
-  - fastqc
-  - multiqc
-  - seqtk
-  - igv
-  # Python data science
-  - python=3.10
-  - pandas
-  - numpy
-  - scipy
-  - matplotlib
-  - seaborn
-  - scikit-learn
-  - biopython
-  - jupyter
-  # R packages
-  - r-base
-  - r-tidyverse
-  - r-ggplot2
-  - bioconductor-deseq2
-  - bioconductor-edger
-  # Development tools
-  - git
-  - gh
-  - jq
-  - parallel
+  # - vcftools
+  # - fastp
+  # - fastqc
+  # - multiqc
+  # - seqtk
+  # - igv
+  # # Python data science
+  # - python=3.10
+  # - pandas
+  # - numpy
+  # - scipy
+  # - matplotlib
+  # - seaborn
+  # - scikit-learn
+  # - biopython
+  # - jupyter
+  # # R packages
+  # - r-base
+  # - r-tidyverse
+  # - r-ggplot2
+  # - bioconductor-deseq2
+  # - bioconductor-edger
+  # # Development tools
+  # - git
+  # - gh
+  # - jq
+  # - parallel
