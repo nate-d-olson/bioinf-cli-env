@@ -1,5 +1,7 @@
 # Bioinformatics CLI Environment Dockerfile
-FROM ubuntu:22.04
+FROM ubuntu:24.04
+# use bash (with pipefail) for all subsequent RUN commands
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Set non-interactive installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -20,7 +22,7 @@ RUN apt-get update && apt-get install -y \
 
 # Create and switch to a non-root user
 ARG USERNAME=biouser
-ARG USER_UID=1000
+ARG USER_UID=1001
 ARG USER_GID=$USER_UID
 
 RUN groupadd --gid $USER_GID $USERNAME \
@@ -43,4 +45,3 @@ RUN cd /home/$USERNAME/bioinf-cli-env && \
 
 # Default command
 CMD ["zsh"]
-EOF
