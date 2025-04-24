@@ -400,13 +400,6 @@ if command -v eza &>/dev/null; then
   alias la="eza -la --group-directories-first --time-style=long-iso"
   alias lt="eza -T --level=2 --group-directories-first"
   alias llt="eza -lT --level=2 --group-directories-first"
-elif command -v exa &>/dev/null; then
-  # Fallback for older exa
-  alias ls="exa --group-directories-first"
-  alias ll="exa -l --group-directories-first"
-  alias la="exa -la --group-directories-first"
-  alias lt="exa -T --level=2 --group-directories-first"
-  alias llt="exa -lT --level=2 --group-directories-first"
 fi
 
 # Replace cat with bat if available
