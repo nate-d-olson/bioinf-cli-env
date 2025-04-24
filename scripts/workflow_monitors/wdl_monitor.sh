@@ -1,140 +1,165 @@
 #!/usr/bin/env bash
-# Enhanced monitoring script for WDL workflows using Cromwell
+# WDL/Cromwell workflow monitor
 set -euo pipefail
-IFS=$'\n\t'
 
-# Show usage if no arguments are provided
-if [ $# -lt 1 ]; then
-  echo "Usage: $(basename $0) <wdl_file> [cromwell_args]"
-  echo "Examples:"
-  echo "  $(basename $0) workflow.wdl"
-  echo "  $(basename $0) workflow.wdl -i inputs.json"
-  exit 1
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$SCRIPT_DIR/utils/monitor_common.sh"
 
-WDL_FILE=$1
-shift
-ARGS=("$@")
+# Default configuration
+: "${LOG_DIR:=cromwell-workflow-logs}"
 
-# Check for Cromwell JAR
-CROMWELL_JAR=${CROMWELL_JAR:-"cromwell.jar"}
-if ! command -v cromwell &>/dev/null && [ ! -f "$CROMWELL_JAR" ]; then
-  echo "❌ Cromwell not found. Either:"
-  echo "  1. Install Cromwell and add it to your PATH, or"
-  echo "  2. Download the cromwell.jar to the current directory, or"
-  echo "  3. Set the CROMWELL_JAR environment variable to the Cromwell JAR location"
-  exit 1
-fi
-
-# Create log directory
-LOG_DIR="${HOME}/.logs/wdl"
-mkdir -p "$LOG_DIR"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-CROMWELL_OUTPUT="${LOG_DIR}/cromwell_${TIMESTAMP}"
-mkdir -p "$CROMWELL_OUTPUT"
-
-# Prepare actual run command
-if command -v cromwell &>/dev/null; then
-  RUN_CMD=("cromwell" "run" "$WDL_FILE" "-o" "$CROMWELL_OUTPUT")
-else
-  RUN_CMD=("java" "-jar" "$CROMWELL_JAR" "run" "$WDL_FILE" "-o" "$CROMWELL_OUTPUT")
-fi
-
-# Add any additional arguments
-for arg in "${ARGS[@]}"; do
-  RUN_CMD+=("$arg")
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -i|--interval)
+            UPDATE_INTERVAL="$2"
+            shift 2
+            ;;
+        -d|--dir)
+            LOG_DIR="$2"
+            shift 2
+            ;;
+        -n|--notify)
+            ENABLE_NOTIFICATIONS=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $(basename "$0") [-i interval] [-d log_dir] [-n]"
+            echo
+            echo "Options:"
+            echo "  -i, --interval SECONDS   Update interval (default: 10)"
+            echo "  -d, --dir DIR           Log directory (default: cromwell-workflow-logs)"
+            echo "  -n, --notify            Enable desktop notifications"
+            echo "  -h, --help              Show this help message"
+            exit 0
+            ;;
+        *)
+            die "Unknown option: $1"
+            ;;
+    esac
 done
 
-echo "🧬 Running WDL workflow with enhanced monitoring..."
-echo "📂 Output directory: ${CROMWELL_OUTPUT}"
+# Verify log directory exists
+if [[ ! -d "$LOG_DIR" ]]; then
+    die "Log directory not found: $LOG_DIR"
+fi
 
-# Start Cromwell in the background
-"${RUN_CMD[@]}" > "${CROMWELL_OUTPUT}/cromwell.log" 2>&1 &
-CROMWELL_PID=$!
+# Monitor state
+declare -A workflow_states
+start_time=$(date +%s)
 
-# Function to monitor Cromwell execution by polling its files
-monitor_cromwell() {
-  local start_time=$(date +%s)
-  local workflow_id=""
-  local status="Initializing"
-  local outputs_file="${CROMWELL_OUTPUT}/outputs.json"
-  
-  while kill -0 $CROMWELL_PID 2>/dev/null; do
-    clear
-    echo "🧬 WDL Workflow Monitor"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log_info "Monitoring WDL workflows in: $LOG_DIR (refreshing every ${UPDATE_INTERVAL}s)"
+log_info "Press Ctrl+C to exit"
+
+monitor_wdl() {
+    local total=0
+    local running=0
+    local completed=0
+    local failed=0
     
-    # Calculate elapsed time
-    local elapsed=$(($(date +%s) - start_time))
-    local elapsed_fmt=$(date -u -d @$elapsed +"%H:%M:%S" 2>/dev/null || date -u -r $elapsed +"%H:%M:%S")
+    # Find and parse all workflow logs
+    while IFS= read -r log_file; do
+        if [[ ! -f "$log_file" ]]; then
+            continue
+        fi
+        
+        local workflow_id=$(basename "$log_file" .log)
+        ((total++))
+        
+        # Parse log file for workflow status
+        if grep -q "workflow finished with status 'Succeeded'" "$log_file"; then
+            workflow_states["$workflow_id"]="completed"
+            ((completed++))
+        elif grep -q "workflow failed" "$log_file"; then
+            workflow_states["$workflow_id"]="failed"
+            ((failed++))
+            # Send notification on failure
+            if [[ "${workflow_states["$workflow_id"]:-}" != "notified" ]]; then
+                send_notification "WDL Workflow Failed" "Workflow $workflow_id failed"
+                workflow_states["$workflow_id"]="notified"
+            fi
+        else
+            workflow_states["$workflow_id"]="running"
+            ((running++))
+        fi
+    done < <(find "$LOG_DIR" -name "*.log" -type f)
     
-    # Try to get workflow ID from logs
-    if [ -z "$workflow_id" ]; then
-      workflow_id=$(grep -o "started workflow \w\+-\w\+-\w\+-\w\+-\w\+" "${CROMWELL_OUTPUT}/cromwell.log" 2>/dev/null | 
-                   sed 's/started workflow //' | 
-                   tail -1)
+    # Display status
+    setup_display
+    
+    echo "=== WDL/Cromwell Status ==="
+    echo "Last updated: $(format_timestamp)"
+    echo
+    echo "Runtime: $(calculate_duration "$start_time")"
+    echo
+    show_progress "$completed" "$total"
+    echo
+    echo "Workflow Summary:"
+    echo "  Total:     $total"
+    echo "  Running:   $running"
+    echo "  Completed: $completed"
+    echo "  Failed:    $failed"
+    echo
+    
+    # Show recent workflow completions
+    echo "Recent Workflow Completions:"
+    find "$LOG_DIR" -name "*.log" -type f -mmin -30 | while read -r log; do
+        workflow_id=$(basename "$log" .log)
+        status="${workflow_states[$workflow_id]}"
+        if [[ "$status" == "completed" ]]; then
+            echo "✓ $workflow_id ($(calculate_duration "$(stat -f %m "$log")"))"
+        fi
+    done
+    echo
+    
+    # Show resource usage for running workflows
+    if ((running > 0)); then
+        echo "Running Workflows Resource Usage:"
+        for workflow_id in "${!workflow_states[@]}"; do
+            if [[ "${workflow_states[$workflow_id]}" == "running" ]]; then
+                local log_file="$LOG_DIR/$workflow_id.log"
+                if [[ -f "$log_file" ]]; then
+                    echo "Workflow: $workflow_id"
+                    # Extract memory usage if available
+                    local mem_usage
+                    mem_usage=$(grep "Memory" "$log_file" | tail -n1 | grep -o '[0-9]\+' || echo "0")
+                    if ((mem_usage > 0)); then
+                        echo "  Memory: $(format_memory "$mem_usage")"
+                    fi
+                    echo "  Runtime: $(calculate_duration "$(stat -f %m "$log_file")")"
+                    echo
+                fi
+            fi
+        done
     fi
     
-    # Try to determine workflow status
-    if [ -n "$workflow_id" ]; then
-      # Check if the workflow has metadata
-      if [ -f "${CROMWELL_OUTPUT}/metadata.json" ]; then
-        status=$(grep -o '"status":"\w\+"' "${CROMWELL_OUTPUT}/metadata.json" 2>/dev/null | 
-                sed 's/"status":"//;s/"//' | 
-                tail -1 || echo "Running")
-      fi
-      
-      echo "⏱️  Workflow: ${workflow_id}"
-      echo "📋 Status: ${status} - Elapsed: ${elapsed_fmt}"
-    else
-      echo "⏱️  Initializing workflow... Elapsed: ${elapsed_fmt}"
+    # Show recent errors
+    if ((failed > 0)); then
+        echo "Recent Errors:"
+        for workflow_id in "${!workflow_states[@]}"; do
+            if [[ "${workflow_states[$workflow_id]}" == "failed" ]]; then
+                local log_file="$LOG_DIR/$workflow_id.log"
+                if [[ -f "$log_file" ]]; then
+                    echo "Workflow: $workflow_id"
+                    grep -A 2 "workflow failed" "$log_file" | tail -n 3
+                    echo
+                fi
+            fi
+        done
     fi
     
-    # Show call status if metadata file exists
-    if [ -f "${CROMWELL_OUTPUT}/metadata.json" ]; then
-      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      echo "📊 Call Status:"
-      
-      # Extract call information with jq if available
-      if command -v jq &>/dev/null; then
-        jq -r '.calls | to_entries[] | "\(.key): \(.value[0].executionStatus)"' "${CROMWELL_OUTPUT}/metadata.json" 2>/dev/null |
-          head -10 || echo "No call information available yet."
-      else
-        grep -o '"executionStatus":"\w\+"' "${CROMWELL_OUTPUT}/metadata.json" 2>/dev/null |
-          sed 's/"executionStatus":"//;s/"//' |
-          sort |
-          uniq -c |
-          awk '{print $2 ": " $1 " calls"}' || echo "No call information available yet."
-      fi
-    fi
-    
-    # Show recent log activity
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📝 Recent Activity:"
-    tail -10 "${CROMWELL_OUTPUT}/cromwell.log" 2>/dev/null | 
-      grep -v "^\s*$" | 
-      cut -c 1-80 || echo "No log data available yet."
-    
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Press Ctrl+C to stop monitoring (workflow will continue)"
-    sleep 5
-  done
+    # Save monitoring state
+    save_monitor_state "wdl" \
+        "total=$total" \
+        "completed=$completed" \
+        "failed=$failed" \
+        "last_update=$(date +%s)"
 }
 
-# Start monitoring in the background
-monitor_cromwell || true
+# Main monitoring loop
+trap 'echo; log_info "Monitoring stopped."; exit 0' INT
 
-# Wait for Cromwell to complete
-wait $CROMWELL_PID
-EXIT_CODE=$?
-
-# Final report
-clear
-echo "🧬 WDL Workflow Completed with exit code $EXIT_CODE"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📊 Results available at: ${CROMWELL_OUTPUT}"
-echo "  - Outputs: ${CROMWELL_OUTPUT}/outputs.json"
-echo "  - Metadata: ${CROMWELL_OUTPUT}/metadata.json"
-echo "  - Log: ${CROMWELL_OUTPUT}/cromwell.log"
-
-exit $EXIT_CODE
+while true; do
+    monitor_wdl
+    sleep "$UPDATE_INTERVAL"
+done

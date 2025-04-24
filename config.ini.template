@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Configuration file for bioinf-cli-env
+# Copy and edit this file, then use with: ./install.sh --non-interactive --config your-config.ini
+
+# Component installation flags (true/false)
+INSTALL_OH_MY_ZSH=true
+INSTALL_MODERN_TOOLS=true
+INSTALL_MICROMAMBA=true
+INSTALL_AZURE_LLM=false
+INSTALL_JOB_MONITORING=true
+INSTALL_PALETTE_SELECTOR=true
+
+# Platform and installer preferences
+# Leave empty to auto-detect, or override with: brew, apt, yum, user-space
+PREFERRED_INSTALLER=""
+
+# Micromamba configuration
+MICROMAMBA_ROOT="$HOME/micromamba"
+
+# Path configuration
+BIN_DIR="$HOME/.local/bin"
+CONFIG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config"
+
+# Bioinformatics tools to include in environment
+# These are handled by the micromamba-config.yaml file, but you can override specific versions here
+# Example: BIOPYTHON_VERSION="1.80"
+
+# Bioinformatics CLI Environment Configuration
+# Copy this file to config.ini and customize as needed
+
+[paths]
+# Installation directories
+bin_dir={{BIN_DIR}}
+config_dir={{CONFIG_DIR}}
+micromamba_root={{MICROMAMBA_ROOT}}
+
+[components]
+# Enable/disable components (true/false)
+install_omz=true
+install_modern_tools=true
+install_micromamba=true
+install_llm=false
+install_monitoring=true
+install_palette=true
+
+[micromamba]
+# Micromamba configuration
+env_name=bioinf
+channels=conda-forge,bioconda,defaults
+# Comma-separated list of additional packages to install
+additional_packages=
+
+[monitoring]
+# Job monitoring configuration
+update_interval=10
+log_retention_days=7
+enable_notifications=false
+
+[llm]
+# Azure OpenAI configuration
+deployment_name=
+subscription_key=
+endpoint=
+
+[theme]
+# Terminal theme configuration
+theme_name=dark
+enable_powerline=true
+enable_icons=true

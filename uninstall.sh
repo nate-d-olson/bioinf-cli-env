@@ -1,63 +1,95 @@
 #!/usr/bin/env bash
-# Safe removal script for bioinf-cli-env
+# Uninstall script for bioinf-cli-env
 set -euo pipefail
 
-BACKUP_DIR="${HOME}/.config/bioinf-cli-env.bak.$(date +%Y%m%d%H%M%S)"
-mkdir -p "$BACKUP_DIR"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/scripts/utils/common.sh"
 
-# Helper to ask yes/no questions
-ask() {
-  read -p "$1 [Y/n] " yn
-  [[ "$yn" != [Nn]* ]]
+# Default paths
+CONFIG_DIR="${HOME}/.config/bioinf-cli-env"
+MICROMAMBA_ROOT="$HOME/micromamba"
+BIN_DIR="${HOME}/.local/bin"
+
+log_info "Uninstalling bioinformatics CLI environment..."
+
+# Helper function to safely remove a line from a file
+remove_line() {
+    local file="$1"
+    local pattern="$2"
+    
+    if [[ -f "$file" ]]; then
+        sed -i.bak "/$pattern/d" "$file"
+        rm -f "${file}.bak"
+    fi
 }
 
-echo "📦 Creating backup of current configurations in $BACKUP_DIR"
-for file in ~/.zshrc ~/.p10k.zsh ~/.nanorc ~/.tmux.conf; do
-  if [[ -f "$file" ]]; then
-    cp "$file" "$BACKUP_DIR/"
-    echo "  → Backed up $file"
-  fi
+# Ask for confirmation before proceeding
+read -p "This will remove all bioinf-cli-env components. Continue? [y/N] " confirm
+if [[ ! "$confirm" =~ ^[Yy] ]]; then
+    log_info "Uninstall cancelled."
+    exit 0
+fi
+
+# Remove micromamba if installed
+if [[ -d "$MICROMAMBA_ROOT" ]]; then
+    log_info "Removing micromamba environment..."
+    if cmd_exists micromamba; then
+        # List and remove all environments
+        while IFS= read -r env; do
+            [[ "$env" == "base" ]] && continue
+            micromamba env remove -y -n "$env"
+        done < <(micromamba env list | tail -n +3 | cut -f1 -d' ')
+        
+        # Remove micromamba installation
+        rm -rf "$MICROMAMBA_ROOT"
+        rm -f "$BIN_DIR/micromamba"
+    fi
+fi
+
+# Remove modern tools symlinks
+log_info "Removing tool symlinks..."
+for tool in eza bat fd rg delta dust procs; do
+    rm -f "$BIN_DIR/$tool"
 done
 
-if ask "Would you like to restore your original configurations from before installation?"; then
-  # Find the oldest backup directory
-  ORIG_BACKUP=$(find "$HOME/.config" -maxdepth 1 -name "bioinf-cli-env.bak.*" | sort | head -n 1)
-  
-  if [[ -n "$ORIG_BACKUP" ]]; then
-    echo "📦 Restoring configurations from $ORIG_BACKUP"
-    for file in .zshrc .p10k.zsh .nanorc .tmux.conf; do
-      if [[ -f "$ORIG_BACKUP/$file" ]]; then
-        cp "$ORIG_BACKUP/$file" "$HOME/"
-        echo "  → Restored $file"
-      fi
-    done
-  else
-    echo "❌ No original backup found."
-  fi
+# Remove monitoring tools
+log_info "Removing monitoring tools..."
+rm -f "$BIN_DIR/snakemonitor" \
+      "$BIN_DIR/nextflow-monitor" \
+      "$BIN_DIR/wdl-monitor"
+
+# Remove Azure OpenAI integration
+log_info "Removing Azure OpenAI integration..."
+rm -f "$HOME/.zsh_azure_llm"
+
+# Clean up configuration files
+log_info "Removing configuration files..."
+rm -rf "$CONFIG_DIR"
+
+# Clean up .zshrc modifications
+log_info "Cleaning up shell configuration..."
+if [[ -f "$HOME/.zshrc" ]]; then
+    # Remove our additions from .zshrc
+    remove_line "$HOME/.zshrc" "source.*\.zsh_azure_llm"
+    remove_line "$HOME/.zshrc" "# Job monitoring aliases"
+    remove_line "$HOME/.zshrc" "alias smr="
+    remove_line "$HOME/.zshrc" "alias nfr="
+    remove_line "$HOME/.zshrc" "alias wdlr="
+    remove_line "$HOME/.zshrc" "export BIOINF_MONITOR_CONFIG"
+    remove_line "$HOME/.zshrc" "# Add job monitoring completions"
+    remove_line "$HOME/.zshrc" "fpath=($CONFIG_DIR"
+    remove_line "$HOME/.zshrc" "# >>> micromamba initialize >>>"
+    remove_line "$HOME/.zshrc" "# <<< micromamba initialize <<<"
+    remove_line "$HOME/.zshrc" "alias bioinf="
 fi
 
-if ask "Would you like to remove installed plugins and tools? (This might affect other software)"; then
-  # Remove Oh My Zsh custom plugins
-  if [[ -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]]; then
-    rm -rf "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions"
-    echo "  → Removed zsh-autosuggestions plugin"
-  fi
-  
-  if [[ -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" ]]; then
-    rm -rf "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting"
-    echo "  → Removed zsh-syntax-highlighting plugin"
-  fi
-  
-  if [[ -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k" ]]; then
-    rm -rf "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
-    echo "  → Removed powerlevel10k theme"
-  fi
-  
-  # Remove fzf
-  if [[ -d "$HOME/.fzf" ]]; then
-    "$HOME/.fzf/uninstall" --all
-    echo "  → Removed fzf"
-  fi
-fi
+# Remove palette selector
+rm -f "$BIN_DIR/select_palette.sh"
 
-echo "✅ Uninstallation complete. Please restart your terminal."
+# Clean up state directory
+rm -rf "$STATE_DIR"
+
+log_success "Uninstallation complete!"
+log_info "Please restart your shell for changes to take effect."
+log_info "Note: Some configurations (like Oh My Zsh) were not removed."
+log_info "      You may want to manually review your ~/.zshrc file."

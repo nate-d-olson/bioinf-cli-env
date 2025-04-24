@@ -1,126 +1,155 @@
 #!/usr/bin/env bash
-# Enhanced monitoring script for Nextflow workflows
+# Nextflow workflow monitor
 set -euo pipefail
-IFS=$'\n\t'
 
-# Show usage if no arguments are provided
-if [ $# -lt 1 ]; then
-  echo "Usage: $(basename $0) <nextflow_script> [nextflow_args]"
-  echo "Examples:"
-  echo "  $(basename $0) main.nf"
-  echo "  $(basename $0) main.nf -profile docker"
-  exit 1
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$SCRIPT_DIR/utils/monitor_common.sh"
+
+# Default configuration
+: "${WORK_DIR:=work}"
+: "${RUN_NAME:=}"
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -i|--interval)
+            UPDATE_INTERVAL="$2"
+            shift 2
+            ;;
+        -w|--work)
+            WORK_DIR="$2"
+            shift 2
+            ;;
+        -r|--run)
+            RUN_NAME="$2"
+            shift 2
+            ;;
+        -n|--notify)
+            ENABLE_NOTIFICATIONS=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $(basename "$0") [-i interval] [-w work_dir] [-r run_name] [-n]"
+            echo
+            echo "Options:"
+            echo "  -i, --interval SECONDS   Update interval (default: 10)"
+            echo "  -w, --work DIR          Work directory (default: work)"
+            echo "  -r, --run NAME          Run name for log file"
+            echo "  -n, --notify            Enable desktop notifications"
+            echo "  -h, --help              Show this help message"
+            exit 0
+            ;;
+        *)
+            die "Unknown option: $1"
+            ;;
+    esac
+done
+
+# Find the .nextflow.log file
+LOG_FILE=".nextflow.log${RUN_NAME:+.$RUN_NAME}"
+if [[ ! -f "$LOG_FILE" ]]; then
+    die "Nextflow log file not found: $LOG_FILE"
 fi
 
-NF_SCRIPT=$1
-shift
-ARGS=("$@")
+# Monitor state
+declare -A process_states
+start_time=$(date +%s)
 
-# Create log directory
-LOG_DIR="${HOME}/.logs/nextflow"
-mkdir -p "$LOG_DIR"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-WORK_DIR="work_${TIMESTAMP}"
+log_info "Monitoring Nextflow run: $LOG_FILE (refreshing every ${UPDATE_INTERVAL}s)"
+log_info "Press Ctrl+C to exit"
 
-echo "✨ Running Nextflow with enhanced monitoring..."
-echo "📂 Work directory: ${WORK_DIR}"
-
-# Run Nextflow with detailed reporting
-nextflow -log "${LOG_DIR}/nextflow_${TIMESTAMP}.log" run "$NF_SCRIPT" \
-  -with-report "${LOG_DIR}/report_${TIMESTAMP}.html" \
-  -with-trace "${LOG_DIR}/trace_${TIMESTAMP}.txt" \
-  -with-timeline "${LOG_DIR}/timeline_${TIMESTAMP}.html" \
-  -with-dag "${LOG_DIR}/dag_${TIMESTAMP}.png" \
-  -work-dir "$WORK_DIR" \
-  "${ARGS[@]}" &
-
-NF_PID=$!
-
-# Function to monitor Nextflow execution
-monitor_nextflow() {
-  local start_time=$(date +%s)
-  local processes_total=0
-  local processes_complete=0
-  local trace_file="${LOG_DIR}/trace_${TIMESTAMP}.txt"
-  
-  while kill -0 $NF_PID 2>/dev/null; do
-    clear
-    echo "✨ Nextflow Workflow Monitor"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+parse_trace_file() {
+    local trace_file="$1"
+    local fields=()
+    local values=()
     
-    # Get process statistics from the work directory
-    if [ -d "$WORK_DIR" ]; then
-      processes_total=$(find "$WORK_DIR" -name ".command.run" | wc -l)
-      processes_complete=$(find "$WORK_DIR" -name ".exitcode" | wc -l)
-      
-      # Calculate progress
-      if [ $processes_total -gt 0 ]; then
-        local percent=$((processes_complete * 100 / processes_total))
-        local elapsed=$(($(date +%s) - start_time))
-        
-        # Format elapsed time
-        local elapsed_fmt=$(date -u -d @$elapsed +"%H:%M:%S" 2>/dev/null || date -u -r $elapsed +"%H:%M:%S")
-        
-        echo "⏱️  Progress: ${percent}% (${processes_complete}/${processes_total} processes) - Elapsed: ${elapsed_fmt}"
-        
-        # Estimate remaining time if we have enough data
-        if [ $percent -gt 5 ] && [ $percent -lt 100 ]; then
-          local total_est=$((elapsed * 100 / percent))
-          local remaining=$((total_est - elapsed))
-          local remaining_fmt=$(date -u -d @$remaining +"%H:%M:%S" 2>/dev/null || date -u -r $remaining +"%H:%M:%S")
-          echo "⏰ Estimated time remaining: ${remaining_fmt}"
-        fi
-      else
-        echo "⏱️  Initializing workflow..."
-      fi
-    else
-      echo "⏱️  Waiting for workflow to start..."
-    fi
+    # Read header line
+    IFS=$'\t' read -r -a fields < "$trace_file"
     
-    # Show resource usage if trace file exists
-    if [ -f "$trace_file" ]; then
-      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      echo "📊 Resource Usage (Last 5 completed processes):"
-      
-      # Skip header and take last 5 completed processes
-      if [ -s "$trace_file" ]; then
-        head -n 1 "$trace_file"
-        tail -n +2 "$trace_file" | tail -5
-      else
-        echo "No trace data available yet."
-      fi
-    fi
+    # Read last line for values
+    while IFS=$'\t' read -r line; do
+        IFS=$'\t' read -r -a values <<< "$line"
+    done < "$trace_file"
     
-    # Show active processes
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "🔄 Running Processes:"
-    find "$WORK_DIR" -name ".command.run" -newer "$WORK_DIR/.nextflow.history" 2>/dev/null | 
-      grep -v ".command.log" |
-      sed -E 's/.*\/([^/]+)\/([^/]+)\/.command.run/\1\/\2/' |
-      head -5 || echo "No running processes found."
-    
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Press Ctrl+C to stop monitoring (workflow will continue)"
-    sleep 5
-  done
+    # Create associative array of field->value
+    local result=""
+    for i in "${!fields[@]}"; do
+        [[ $i -lt ${#values[@]} ]] && result+="${fields[$i]}=${values[$i]}\n"
+    done
+    echo -e "$result"
 }
 
-# Start monitoring in the background
-monitor_nextflow || true
+monitor_nextflow() {
+    local submitted=0
+    local completed=0
+    local failed=0
+    local cached=0
+    
+    # Parse log file for process status
+    submitted=$(grep -c "Submitted process" "$LOG_FILE" 2>/dev/null || echo 0)
+    cached=$(grep -c "Cached process" "$LOG_FILE" 2>/dev/null || echo 0)
+    completed=$((cached + $(grep -c "Completed process" "$LOG_FILE" 2>/dev/null || echo 0)))
+    failed=$(grep -c "\[E\]" "$LOG_FILE" 2>/dev/null || echo 0)
+    
+    # Calculate running processes
+    local running=$((submitted - completed - failed))
+    running=$((running < 0 ? 0 : running))
+    
+    # Display status
+    setup_display
+    
+    echo "=== Nextflow Status ==="
+    echo "Last updated: $(format_timestamp)"
+    echo
+    echo "Runtime: $(calculate_duration "$start_time")"
+    echo
+    if ((submitted > 0)); then
+        show_progress "$completed" "$submitted"
+        echo
+        echo "Process Summary:"
+        echo "  Total:     $submitted"
+        echo "  Running:   $running"
+        echo "  Completed: $completed"
+        echo "  Cached:    $cached"
+        echo "  Failed:    $failed"
+        echo
+        
+        # Show recent completions
+        echo "Recent Process Completions:"
+        grep -E "Cached process|Completed process" "$LOG_FILE" | tail -n 5
+        echo
+        
+        # Show resource usage if available
+        if [[ -d "$WORK_DIR" ]]; then
+            echo "Resource Usage (recent processes):"
+            while IFS= read -r trace_file; do
+                echo "Process: $(dirname "$trace_file" | xargs basename)"
+                parse_trace_file "$trace_file" | grep -E "duration|cpu|memory|disk"
+                echo
+            done < <(find "$WORK_DIR" -name ".command.trace" -type f -mmin -5 | head -n 3)
+        fi
+        
+        # Show any recent errors
+        if ((failed > 0)); then
+            echo "Recent Errors:"
+            grep -A 2 "ERROR" "$LOG_FILE" | tail -n 6
+        fi
+    else
+        echo "No processes submitted yet. Waiting for workflow to start..."
+    fi
+    
+    # Save monitoring state
+    save_monitor_state "nextflow" \
+        "submitted=$submitted" \
+        "completed=$completed" \
+        "failed=$failed" \
+        "last_update=$(date +%s)"
+}
 
-# Wait for Nextflow to complete
-wait $NF_PID
-EXIT_CODE=$?
+# Main monitoring loop
+trap 'echo; log_info "Monitoring stopped."; exit 0' INT
 
-# Final report
-clear
-echo "✨ Nextflow Workflow Completed with exit code $EXIT_CODE"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📊 Reports available at:"
-echo "  - HTML Report: ${LOG_DIR}/report_${TIMESTAMP}.html"
-echo "  - Timeline: ${LOG_DIR}/timeline_${TIMESTAMP}.html"
-echo "  - DAG visualization: ${LOG_DIR}/dag_${TIMESTAMP}.png"
-echo "  - Trace file: ${LOG_DIR}/trace_${TIMESTAMP}.txt"
-echo "  - Log file: ${LOG_DIR}/nextflow_${TIMESTAMP}.log"
-
-exit $EXIT_CODE
+while true; do
+    monitor_nextflow
+    sleep "$UPDATE_INTERVAL"
+done

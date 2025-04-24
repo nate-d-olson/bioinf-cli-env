@@ -1,78 +1,172 @@
 #!/usr/bin/env bash
 # Oh My Zsh and Powerlevel10k setup script
-set -euo pipefail
+
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/utils/common.sh"
 
 CONFIG_DIR="${1:-$(pwd)/config}"
 
 # Check if zsh is installed
-if ! command -v zsh &>/dev/null; then
-  echo "❌ zsh is not installed! Please install it first."
-  if [[ "$(uname)" == "Darwin" ]]; then
-    echo "macOS: zsh is installed by default."
-  else
-    echo "Ubuntu: sudo apt install zsh"
-  fi
+if ! cmd_exists zsh; then
+  log_error "zsh is not installed! Please install it first."
+  
+  # Provide platform-specific installation instructions
+  platform=$(detect_platform)
+  os=$(get_os "$platform")
+  
+  case "$os" in
+    "macos")
+      log_info "macOS: zsh is installed by default."
+      ;;
+    "ubuntu"|"debian")
+      log_info "Ubuntu/Debian: sudo apt install zsh"
+      ;;
+    "redhat")
+      log_info "RHEL/CentOS: sudo yum install zsh"
+      ;;
+    *)
+      log_info "Please install zsh using your system's package manager."
+      ;;
+  esac
   exit 1
 fi
 
+# Create a backup of existing configurations
+BACKUP_DIR="$HOME/.config/bioinf-cli-env/backups/$(date +%Y%m%d%H%M%S)"
+mkdir -p "$BACKUP_DIR"
+
+for file in "$HOME/.zshrc" "$HOME/.p10k.zsh" "$HOME/.oh-my-zsh"; do
+  if [[ -e "$file" ]]; then
+    log_info "Backing up $file"
+    if [[ -d "$file" ]]; then
+      cp -r "$file" "$BACKUP_DIR/"
+    else
+      cp "$file" "$BACKUP_DIR/"
+    fi
+  fi
+done
+
 # Install Oh My Zsh if not already installed
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
-  echo "📥 Installing Oh My Zsh..."
-  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+  log_info "Installing Oh My Zsh..."
+  
+  # Use safe download function
+  safe_download "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh" "/tmp/install_omz.sh"
+  sh /tmp/install_omz.sh --unattended
+  rm /tmp/install_omz.sh
+  
+  save_state "oh_my_zsh" "installed"
+  log_success "Oh My Zsh installed"
 else
-  echo "✅ Oh My Zsh is already installed."
+  log_success "Oh My Zsh is already installed."
 fi
 
 # Install Powerlevel10k theme if not already installed
 if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k" ]]; then
-  echo "📥 Installing Powerlevel10k theme..."
-  git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+  log_info "Installing Powerlevel10k theme..."
+  git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
+  save_state "powerlevel10k" "installed"
+  log_success "Powerlevel10k theme installed"
 else
-  echo "✅ Powerlevel10k theme is already installed."
+  log_success "Powerlevel10k theme is already installed."
 fi
 
 # Install plugins if not already installed
-if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]]; then
-  echo "📥 Installing zsh-autosuggestions..."
-  git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-else
-  echo "✅ zsh-autosuggestions is already installed."
-fi
-
-if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" ]]; then
-  echo "📥 Installing zsh-syntax-highlighting..."
-  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-else
-  echo "✅ zsh-syntax-highlighting is already installed."
-fi
-
-if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-completions" ]]; then
-  echo "📥 Installing zsh-completions..."
-  git clone https://github.com/zsh-users/zsh-completions ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-completions
-else
-  echo "✅ zsh-completions is already installed."
-fi
+for plugin in "zsh-autosuggestions" "zsh-syntax-highlighting" "zsh-completions"; do
+  if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/$plugin" ]]; then
+    log_info "Installing $plugin..."
+    git clone "https://github.com/zsh-users/$plugin" "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/$plugin"
+    save_state "$plugin" "installed"
+    log_success "$plugin installed"
+  else
+    log_success "$plugin is already installed."
+  fi
+done
 
 # Install fzf if not already installed
 if [[ ! -d "$HOME/.fzf" ]]; then
-  echo "📥 Installing fzf..."
+  log_info "Installing fzf..."
   git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME/.fzf"
   "$HOME/.fzf/install" --all --no-update-rc
+  save_state "fzf" "installed"
+  log_success "fzf installed"
 else
-  echo "✅ fzf is already installed."
+  log_success "fzf is already installed."
 fi
 
-# Copy config files
-echo "📝 Copying configuration files..."
-cp "$CONFIG_DIR/zshrc" "$HOME/.zshrc"
+# Copy config files with backup and merging
+install_config_file() {
+  local src="$1"
+  local dest="$2"
+  local backup_dir="$3"
+  
+  # Check if destination file exists
+  if [[ -f "$dest" ]]; then
+    # Backup existing file
+    backup_file "$dest" "$backup_dir"
+    
+    # Check if file has custom user changes
+    if grep -q "# === USER CUSTOMIZATIONS BELOW ===" "$dest"; then
+      log_info "Preserving user customizations in $dest"
+      # Extract user customizations
+      sed -n '/# === USER CUSTOMIZATIONS BELOW ===/,$p' "$dest" > "$backup_dir/user_custom.tmp"
+      
+      # Copy new config but preserve user customizations
+      cp "$src" "$dest"
+      
+      # Check if new config has the marker
+      if ! grep -q "# === USER CUSTOMIZATIONS BELOW ===" "$dest"; then
+        echo "" >> "$dest"
+        echo "# === USER CUSTOMIZATIONS BELOW ===" >> "$dest"
+      fi
+      
+      # Append user customizations after the marker
+      sed -n '2,$p' "$backup_dir/user_custom.tmp" >> "$dest"
+      rm "$backup_dir/user_custom.tmp"
+    else
+      # No user customizations marker, just copy
+      cp "$src" "$dest"
+      
+      # Add customization marker
+      if ! grep -q "# === USER CUSTOMIZATIONS BELOW ===" "$dest"; then
+        echo "" >> "$dest"
+        echo "# === USER CUSTOMIZATIONS BELOW ===" >> "$dest"
+        echo "# Add your custom configurations here" >> "$dest"
+      fi
+    fi
+  else
+    # File doesn't exist, just copy
+    cp "$src" "$dest"
+    
+    # Add customization marker
+    if ! grep -q "# === USER CUSTOMIZATIONS BELOW ===" "$dest"; then
+      echo "" >> "$dest"
+      echo "# === USER CUSTOMIZATIONS BELOW ===" >> "$dest"
+      echo "# Add your custom configurations here" >> "$dest"
+    fi
+  fi
+  
+  log_success "Installed $dest"
+}
+
+# Copy configuration files
+log_info "Copying configuration files..."
+
+# Install zshrc
+if [[ -f "$CONFIG_DIR/zshrc" ]]; then
+  install_config_file "$CONFIG_DIR/zshrc" "$HOME/.zshrc" "$BACKUP_DIR"
+else
+  log_error "zshrc configuration file not found: $CONFIG_DIR/zshrc"
+fi
 
 # Run p10k configuration if not already configured
 if [[ ! -f "$HOME/.p10k.zsh" ]]; then
-  echo "⚙️  Setting up default Powerlevel10k configuration..."
+  log_info "Setting up default Powerlevel10k configuration..."
   
   # Check if we have a pre-made p10k.zsh file
   if [[ -f "$CONFIG_DIR/p10k.zsh" ]]; then
-    cp "$CONFIG_DIR/p10k.zsh" "$HOME/.p10k.zsh"
+    install_config_file "$CONFIG_DIR/p10k.zsh" "$HOME/.p10k.zsh" "$BACKUP_DIR"
   else
     # Create a minimal p10k config
     cat > "$HOME/.p10k.zsh" << 'ENDP10K'
@@ -109,12 +203,28 @@ typeset -g POWERLEVEL9K_ICON_PADDING=moderate
 
 # Anaconda/micromamba environment display
 typeset -g POWERLEVEL9K_ANACONDA_SHOW_ON_COMMAND='python|pip|ipython|jupyter|conda|mamba|micromamba'
+
+# === USER CUSTOMIZATIONS BELOW ===
+# Add your custom configurations here
 ENDP10K
+    log_success "Created default p10k.zsh"
   fi
   
-  echo "✅ Powerlevel10k configuration created. Run 'p10k configure' for full customization."
+  log_info "Run 'p10k configure' for full customization."
 else
-  echo "✅ Powerlevel10k already configured."
+  log_success "Powerlevel10k already configured."
 fi
 
-echo "✅ Oh My Zsh setup complete!"
+# Set zsh as default shell if it isn't already
+if [[ "$SHELL" != *"zsh"* ]]; then
+  log_info "Setting zsh as default shell..."
+  if command -v chsh >/dev/null 2>&1; then
+    chsh -s "$(which zsh)"
+    log_success "zsh set as default shell"
+  else
+    log_warning "Could not set zsh as default shell. Please run: chsh -s $(which zsh)"
+  fi
+fi
+
+log_success "Oh My Zsh setup complete!"
+log_info "Please restart your terminal or run 'source ~/.zshrc' to apply changes."
