@@ -46,7 +46,7 @@ if [[ -n "$CONFIG_FILE" ]]; then
     if [[ "$CONFIG_FILE" != "$CONFIG_INI" ]]; then
         cp "$CONFIG_FILE" "$CONFIG_INI"
     else
-        log_info "Using existing configuration file: $CONFIG_INI"
+        log_info "Source and destination are the same: $CONFIG_INI. Skipping copy."
     fi
 elif [[ ! -f "$CONFIG_INI" && "$INTERACTIVE" == "false" ]]; then
     die "Non-interactive mode requires a config file. Copy config.ini.template to config.ini and customize it."
