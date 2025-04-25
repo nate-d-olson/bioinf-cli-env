@@ -56,24 +56,24 @@ log() {
     local message="$*"
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
+
     # Log to file
-    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
-    
+    echo "[$timestamp] [$level] $message" >>"$LOG_FILE"
+
     # Log to console based on level
     case "$level" in
-        ERROR)
-            [[ "$LOG_LEVEL" =~ ^(ERROR|WARN|INFO|DEBUG)$ ]] && echo -e "${RED}[ERROR]${NC} $message" >&2
-            ;;
-        WARN)
-            [[ "$LOG_LEVEL" =~ ^(WARN|INFO|DEBUG)$ ]] && echo -e "${YELLOW}[WARN]${NC} $message" >&2
-            ;;
-        INFO)
-            [[ "$LOG_LEVEL" =~ ^(INFO|DEBUG)$ ]] && echo -e "${BLUE}[INFO]${NC} $message"
-            ;;
-        DEBUG)
-            [[ "$LOG_LEVEL" == "DEBUG" ]] && echo -e "[DEBUG] $message"
-            ;;
+    ERROR)
+        [[ "$LOG_LEVEL" =~ ^(ERROR|WARN|INFO|DEBUG)$ ]] && echo -e "${RED}[ERROR]${NC} $message" >&2
+        ;;
+    WARN)
+        [[ "$LOG_LEVEL" =~ ^(WARN|INFO|DEBUG)$ ]] && echo -e "${YELLOW}[WARN]${NC} $message" >&2
+        ;;
+    INFO)
+        [[ "$LOG_LEVEL" =~ ^(INFO|DEBUG)$ ]] && echo -e "${BLUE}[INFO]${NC} $message"
+        ;;
+    DEBUG)
+        [[ "$LOG_LEVEL" == "DEBUG" ]] && echo -e "[DEBUG] $message"
+        ;;
     esac
 }
 
@@ -88,7 +88,7 @@ die() {
     local message=$1
     local code=${2:-1}
     local stack
-    
+
     # Generate stack trace
     stack=$(
         local frame=0
@@ -96,7 +96,7 @@ die() {
             ((frame++))
         done
     )
-    
+
     log_error "$message"
     log_debug "Stack trace:\n$stack"
     exit "$code"
@@ -107,49 +107,49 @@ detect_platform() {
     local os
     local arch
     local variant=""
-    
+
     # Detect OS
     case "$(uname -s)" in
-        Darwin*)
-            os="darwin"
-            # Detect macOS version
-            version=$(sw_vers -productVersion)
-            variant="macOS_${version%%.*}"
-            ;;
-        Linux*)
-            os="linux"
-            # Detect Linux distribution
-            if [[ -f /etc/os-release ]]; then
-                source /etc/os-release
-                variant="${ID}_${VERSION_ID%%.*}"
-            fi
-            ;;
-        *)
-            os="unknown"
-            ;;
+    Darwin*)
+        os="darwin"
+        # Detect macOS version
+        version=$(sw_vers -productVersion)
+        variant="macOS_${version%%.*}"
+        ;;
+    Linux*)
+        os="linux"
+        # Detect Linux distribution
+        if [[ -f /etc/os-release ]]; then
+            source /etc/os-release
+            variant="${ID}_${VERSION_ID%%.*}"
+        fi
+        ;;
+    *)
+        os="unknown"
+        ;;
     esac
-    
+
     # Detect architecture with support for ARM
     case "$(uname -m)" in
-        x86_64*)
-            # Check for Rosetta on macOS
-            if [[ "$os" == "darwin" ]] && sysctl -n sysctl.proc_translated >/dev/null 2>&1; then
-                arch="arm64"
-            else
-                arch="amd64"
-            fi
-            ;;
-        aarch64*|arm64*)
+    x86_64*)
+        # Check for Rosetta on macOS
+        if [[ "$os" == "darwin" ]] && sysctl -n sysctl.proc_translated >/dev/null 2>&1; then
             arch="arm64"
-            ;;
-        armv7*|armv8*)
-            arch="arm"
-            ;;
-        *)
-            arch="$(uname -m)"
-            ;;
+        else
+            arch="amd64"
+        fi
+        ;;
+    aarch64* | arm64*)
+        arch="arm64"
+        ;;
+    armv7* | armv8*)
+        arch="arm"
+        ;;
+    *)
+        arch="$(uname -m)"
+        ;;
     esac
-    
+
     echo "${os}_${arch}${variant:+_}${variant}"
 }
 
@@ -173,7 +173,7 @@ mkdir -p "$STATE_DIR"
 save_state() {
     local component="$1"
     local state="$2"
-    echo "$state" > "$STATE_DIR/$component.state"
+    echo "$state" >"$STATE_DIR/$component.state"
 }
 
 get_state() {
@@ -192,12 +192,15 @@ load_config() {
     if [[ ! -f "$config_file" ]]; then
         die "Configuration file not found: $config_file"
     fi
-    
+
     # Source the config file in a subshell to validate syntax
-    if ! ( set -e; source "$config_file" ); then
+    if ! (
+        set -e
+        source "$config_file"
+    ); then
         die "Invalid configuration file: $config_file"
     fi
-    
+
     # Source in current shell if validation passed
     source "$config_file"
 }
@@ -206,18 +209,18 @@ load_config() {
 validate_config() {
     local config_file=$1
     local schema_file=${2:-""}
-    
+
     if [[ ! -f "$config_file" ]]; then
         log_error "Configuration file not found: $config_file"
         return 1
     fi
-    
+
     # Basic syntax check
     if ! bash -n "$config_file"; then
         log_error "Invalid shell syntax in configuration file"
         return 1
     fi
-    
+
     # Schema validation if provided
     if [[ -n "$schema_file" && -f "$schema_file" ]]; then
         if command -v jq >/dev/null; then
@@ -229,7 +232,7 @@ validate_config() {
             log_warning "jq not found, skipping schema validation"
         fi
     fi
-    
+
     return 0
 }
 
@@ -251,22 +254,22 @@ install_dependency() {
     local package="$1"
     local pkg_mgr
     pkg_mgr=$(get_package_manager)
-    
+
     if ! cmd_exists "$package"; then
         log_info "Installing $package..."
         case "$pkg_mgr" in
-            apt)
-                sudo apt-get update && sudo apt-get install -y "$package"
-                ;;
-            yum)
-                sudo yum install -y "$package"
-                ;;
-            brew)
-                brew install "$package"
-                ;;
-            *)
-                die "No supported package manager found"
-                ;;
+        apt)
+            sudo apt-get update && sudo apt-get install -y "$package"
+            ;;
+        yum)
+            sudo yum install -y "$package"
+            ;;
+        brew)
+            brew install "$package"
+            ;;
+        *)
+            die "No supported package manager found"
+            ;;
         esac
     fi
 }
@@ -282,27 +285,27 @@ add_to_path() {
     if [[ ! -d "$dir" ]]; then
         return 1
     fi
-    
+
     if ! echo "$PATH" | tr ':' '\n' | grep -q "^$dir$"; then
         export PATH="$dir:$PATH"
     fi
 }
 
 # File operations
-backup_config() {  # Renamed from backup_file
+backup_config() { # Renamed from backup_file
     local file=$1
     local backup_dir=${2:-"${HOME}/.local/backup/bioinf-cli-env"}
     local timestamp
     timestamp=$(date +%Y%m%d_%H%M%S)
-    
+
     if [[ ! -f "$file" ]]; then
         log_warning "File not found for backup: $file"
         return 0
     fi
-    
+
     mkdir -p "$backup_dir"
     local backup_file="${backup_dir}/$(basename "$file").${timestamp}"
-    
+
     if cp -p "$file" "$backup_file"; then
         log_info "Created backup: $backup_file"
         echo "$backup_file"
@@ -346,17 +349,17 @@ show_progress() {
     local total=$2
     local width=${3:-50}
     local message=${4:-"Progress"}
-    
+
     local percentage=$((current * 100 / total))
     local filled=$((width * current / total))
     local empty=$((width - filled))
-    
+
     printf "\r%s [%s%s] %d%%" \
         "$message" \
         "$(printf '#%.0s' $(seq 1 "$filled"))" \
         "$(printf '.%.0s' $(seq 1 "$empty"))" \
         "$percentage"
-    
+
     if ((current == total)); then
         echo
     fi

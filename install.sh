@@ -19,19 +19,19 @@ CONFIG_FILE=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --non-interactive)
-            INTERACTIVE=false
-            shift
-            ;;
-        --config)
-            CONFIG_FILE="$2"
-            shift 2
-            ;;
-        *)
-            log_error "Unknown option: $1"
-            echo "Usage: $0 [--non-interactive] [--config config.ini]"
-            exit 1
-            ;;
+    --non-interactive)
+        INTERACTIVE=false
+        shift
+        ;;
+    --config)
+        CONFIG_FILE="$2"
+        shift 2
+        ;;
+    *)
+        log_error "Unknown option: $1"
+        echo "Usage: $0 [--non-interactive] [--config config.ini]"
+        exit 1
+        ;;
     esac
 done
 
@@ -56,7 +56,7 @@ fi
 ask() {
     local prompt="$1"
     local config_key="$2"
-    
+
     if [[ "$INTERACTIVE" == "true" ]]; then
         read -r -p "$prompt [Y/n] " yn
         [[ "$yn" != [Nn]* ]]
@@ -99,7 +99,7 @@ fi
 
 ## %%TODO%% fix not currently working in docker
 if ask "Install Azure OpenAI CLI integration?" "INSTALL_AZURE_LLM"; then
- bash "$SCRIPTS_DIR/setup_llm.sh"
+    bash "$SCRIPTS_DIR/setup_llm.sh"
 fi
 
 if ask "Install job monitoring tools?" "INSTALL_JOB_MONITORING"; then

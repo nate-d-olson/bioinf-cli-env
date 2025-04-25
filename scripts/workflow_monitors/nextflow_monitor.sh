@@ -12,36 +12,36 @@ source "$SCRIPT_DIR/utils/monitor_common.sh"
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -i|--interval)
-            UPDATE_INTERVAL="$2"
-            shift 2
-            ;;
-        -w|--work)
-            WORK_DIR="$2"
-            shift 2
-            ;;
-        -r|--run)
-            RUN_NAME="$2"
-            shift 2
-            ;;
-        -n|--notify)
-            ENABLE_NOTIFICATIONS=true
-            shift
-            ;;
-        -h|--help)
-            echo "Usage: $(basename "$0") [-i interval] [-w work_dir] [-r run_name] [-n]"
-            echo
-            echo "Options:"
-            echo "  -i, --interval SECONDS   Update interval (default: 10)"
-            echo "  -w, --work DIR          Work directory (default: work)"
-            echo "  -r, --run NAME          Run name for log file"
-            echo "  -n, --notify            Enable desktop notifications"
-            echo "  -h, --help              Show this help message"
-            exit 0
-            ;;
-        *)
-            die "Unknown option: $1"
-            ;;
+    -i | --interval)
+        UPDATE_INTERVAL="$2"
+        shift 2
+        ;;
+    -w | --work)
+        WORK_DIR="$2"
+        shift 2
+        ;;
+    -r | --run)
+        RUN_NAME="$2"
+        shift 2
+        ;;
+    -n | --notify)
+        ENABLE_NOTIFICATIONS=true
+        shift
+        ;;
+    -h | --help)
+        echo "Usage: $(basename "$0") [-i interval] [-w work_dir] [-r run_name] [-n]"
+        echo
+        echo "Options:"
+        echo "  -i, --interval SECONDS   Update interval (default: 10)"
+        echo "  -w, --work DIR          Work directory (default: work)"
+        echo "  -r, --run NAME          Run name for log file"
+        echo "  -n, --notify            Enable desktop notifications"
+        echo "  -h, --help              Show this help message"
+        exit 0
+        ;;
+    *)
+        die "Unknown option: $1"
+        ;;
     esac
 done
 
@@ -62,15 +62,15 @@ parse_trace_file() {
     local trace_file="$1"
     local fields=()
     local values=()
-    
+
     # Read header line
-    IFS=$'\t' read -r -a fields < "$trace_file"
-    
+    IFS=$'\t' read -r -a fields <"$trace_file"
+
     # Read last line for values
     while IFS=$'\t' read -r line; do
-        IFS=$'\t' read -r -a values <<< "$line"
-    done < "$trace_file"
-    
+        IFS=$'\t' read -r -a values <<<"$line"
+    done <"$trace_file"
+
     # Create associative array of field->value
     local result=""
     for i in "${!fields[@]}"; do
@@ -84,20 +84,20 @@ monitor_nextflow() {
     local completed=0
     local failed=0
     local cached=0
-    
+
     # Parse log file for process status
     submitted=$(grep -c "Submitted process" "$LOG_FILE" 2>/dev/null || echo 0)
     cached=$(grep -c "Cached process" "$LOG_FILE" 2>/dev/null || echo 0)
     completed=$((cached + $(grep -c "Completed process" "$LOG_FILE" 2>/dev/null || echo 0)))
     failed=$(grep -c "\[E\]" "$LOG_FILE" 2>/dev/null || echo 0)
-    
+
     # Calculate running processes
     local running=$((submitted - completed - failed))
     running=$((running < 0 ? 0 : running))
-    
+
     # Display status
     setup_display
-    
+
     echo "=== Nextflow Status ==="
     echo "Last updated: $(format_timestamp)"
     echo
@@ -113,12 +113,12 @@ monitor_nextflow() {
         echo "  Cached:    $cached"
         echo "  Failed:    $failed"
         echo
-        
+
         # Show recent completions
         echo "Recent Process Completions:"
         grep -E "Cached process|Completed process" "$LOG_FILE" | tail -n 5
         echo
-        
+
         # Show resource usage if available
         if [[ -d "$WORK_DIR" ]]; then
             echo "Resource Usage (recent processes):"
@@ -128,7 +128,7 @@ monitor_nextflow() {
                 echo
             done < <(find "$WORK_DIR" -name ".command.trace" -type f -mmin -5 | head -n 3)
         fi
-        
+
         # Show any recent errors
         if ((failed > 0)); then
             echo "Recent Errors:"
@@ -137,7 +137,7 @@ monitor_nextflow() {
     else
         echo "No processes submitted yet. Waiting for workflow to start..."
     fi
-    
+
     # Save monitoring state
     save_monitor_state "nextflow" \
         "submitted=$submitted" \

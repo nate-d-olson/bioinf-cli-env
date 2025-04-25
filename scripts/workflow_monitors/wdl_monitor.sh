@@ -11,31 +11,31 @@ source "$SCRIPT_DIR/utils/monitor_common.sh"
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -i|--interval)
-            UPDATE_INTERVAL="$2"
-            shift 2
-            ;;
-        -d|--dir)
-            LOG_DIR="$2"
-            shift 2
-            ;;
-        -n|--notify)
-            ENABLE_NOTIFICATIONS=true
-            shift
-            ;;
-        -h|--help)
-            echo "Usage: $(basename "$0") [-i interval] [-d log_dir] [-n]"
-            echo
-            echo "Options:"
-            echo "  -i, --interval SECONDS   Update interval (default: 10)"
-            echo "  -d, --dir DIR           Log directory (default: cromwell-workflow-logs)"
-            echo "  -n, --notify            Enable desktop notifications"
-            echo "  -h, --help              Show this help message"
-            exit 0
-            ;;
-        *)
-            die "Unknown option: $1"
-            ;;
+    -i | --interval)
+        UPDATE_INTERVAL="$2"
+        shift 2
+        ;;
+    -d | --dir)
+        LOG_DIR="$2"
+        shift 2
+        ;;
+    -n | --notify)
+        ENABLE_NOTIFICATIONS=true
+        shift
+        ;;
+    -h | --help)
+        echo "Usage: $(basename "$0") [-i interval] [-d log_dir] [-n]"
+        echo
+        echo "Options:"
+        echo "  -i, --interval SECONDS   Update interval (default: 10)"
+        echo "  -d, --dir DIR           Log directory (default: cromwell-workflow-logs)"
+        echo "  -n, --notify            Enable desktop notifications"
+        echo "  -h, --help              Show this help message"
+        exit 0
+        ;;
+    *)
+        die "Unknown option: $1"
+        ;;
     esac
 done
 
@@ -56,16 +56,16 @@ monitor_wdl() {
     local running=0
     local completed=0
     local failed=0
-    
+
     # Find and parse all workflow logs
     while IFS= read -r log_file; do
         if [[ ! -f "$log_file" ]]; then
             continue
         fi
-        
+
         local workflow_id=$(basename "$log_file" .log)
         ((total++))
-        
+
         # Parse log file for workflow status
         if grep -q "workflow finished with status 'Succeeded'" "$log_file"; then
             workflow_states["$workflow_id"]="completed"
@@ -83,10 +83,10 @@ monitor_wdl() {
             ((running++))
         fi
     done < <(find "$LOG_DIR" -name "*.log" -type f)
-    
+
     # Display status
     setup_display
-    
+
     echo "=== WDL/Cromwell Status ==="
     echo "Last updated: $(format_timestamp)"
     echo
@@ -100,7 +100,7 @@ monitor_wdl() {
     echo "  Completed: $completed"
     echo "  Failed:    $failed"
     echo
-    
+
     # Show recent workflow completions
     echo "Recent Workflow Completions:"
     find "$LOG_DIR" -name "*.log" -type f -mmin -30 | while read -r log; do
@@ -111,7 +111,7 @@ monitor_wdl() {
         fi
     done
     echo
-    
+
     # Show resource usage for running workflows
     if ((running > 0)); then
         echo "Running Workflows Resource Usage:"
@@ -132,7 +132,7 @@ monitor_wdl() {
             fi
         done
     fi
-    
+
     # Show recent errors
     if ((failed > 0)); then
         echo "Recent Errors:"
@@ -147,7 +147,7 @@ monitor_wdl() {
             fi
         done
     fi
-    
+
     # Save monitoring state
     save_monitor_state "wdl" \
         "total=$total" \

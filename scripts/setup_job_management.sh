@@ -13,7 +13,7 @@ mkdir -p "$BIN_DIR"
 log_info "🧬 Setting up enhanced SLURM job management utilities..."
 
 # Create the sj command for SLURM job monitoring
-cat > "$BIN_DIR/sj" << 'ENDSJ'
+cat >"$BIN_DIR/sj" <<'ENDSJ'
 #!/usr/bin/env bash
 # Enhanced SLURM job status monitoring
 
@@ -274,7 +274,7 @@ fi
 ENDSJ
 
 # Create the job template creator
-cat > "$BIN_DIR/create_job" << 'ENDJOB'
+cat >"$BIN_DIR/create_job" <<'ENDJOB'
 #!/usr/bin/env bash
 # SLURM job script generator
 set -euo pipefail
@@ -385,7 +385,7 @@ echo "  sbatch $OUTPUT_FILE"
 ENDJOB
 
 # Create interactive session shortcuts
-cat > "$BIN_DIR/srun1" << 'ENDSRUN1'
+cat >"$BIN_DIR/srun1" <<'ENDSRUN1'
 #!/usr/bin/env bash
 # Start an interactive job with 1 core, 8GB RAM, 2-hour limit
 
@@ -399,7 +399,7 @@ echo ""
 srun --pty --cpus-per-task=1 --mem=8G --time=02:00:00 bash -i
 ENDSRUN1
 
-cat > "$BIN_DIR/srun8" << 'ENDSRUN8'
+cat >"$BIN_DIR/srun8" <<'ENDSRUN8'
 #!/usr/bin/env bash
 # Start an interactive job with 8 cores, 32GB RAM, 8-hour limit
 
@@ -414,7 +414,7 @@ srun --pty --cpus-per-task=8 --mem=32G --time=08:00:00 bash -i
 ENDSRUN8
 
 # Create job notification wrapper
-cat > "$BIN_DIR/sbatch-notify" << 'ENDNOTIFY'
+cat >"$BIN_DIR/sbatch-notify" <<'ENDNOTIFY'
 #!/usr/bin/env bash
 # Submit a job and set up notifications when it completes
 set -euo pipefail
@@ -496,7 +496,7 @@ chmod +x "$BIN_DIR/sj" "$BIN_DIR/create_job" "$BIN_DIR/srun1" "$BIN_DIR/srun8" "
 # Create aliases in the zsh configuration
 ALIASES_FILE="$HOME/.zsh_slurm_aliases"
 
-cat > "$ALIASES_FILE" << 'ENDALIASES'
+cat >"$ALIASES_FILE" <<'ENDALIASES'
 # SLURM aliases and functions
 alias sq='squeue -u $USER'
 alias si='sinfo'
@@ -566,8 +566,8 @@ ENDALIASES
 
 # Source the aliases file in .zshrc if not already there
 if ! grep -q "zsh_slurm_aliases" "$HOME/.zshrc"; then
-  echo -e "\n# SLURM job management aliases and functions" >> "$HOME/.zshrc"
-  echo "[ -f \"$ALIASES_FILE\" ] && source \"$ALIASES_FILE\"" >> "$HOME/.zshrc"
+    echo -e "\n# SLURM job management aliases and functions" >>"$HOME/.zshrc"
+    echo "[ -f \"$ALIASES_FILE\" ] && source \"$ALIASES_FILE\"" >>"$HOME/.zshrc"
 fi
 
 # Create logs directory

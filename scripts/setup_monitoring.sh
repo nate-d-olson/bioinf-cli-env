@@ -20,12 +20,12 @@ install_monitor() {
     local source="$1"
     local target="$2"
     local name="$3"
-    
+
     if [[ ! -f "$source" ]]; then
         log_error "Monitor script not found: $source"
         return 1
     fi
-    
+
     # Install the monitor script
     install -m0755 "$source" "$target"
     log_success "Installed $name monitor to $target"
@@ -37,7 +37,7 @@ install_monitor "$MONITOR_DIR/nextflow_monitor.sh" "$BIN_DIR/nextflow-monitor" "
 install_monitor "$MONITOR_DIR/wdl_monitor.sh" "$BIN_DIR/wdl-monitor" "WDL"
 
 # Create monitoring configuration
-cat > "$CONFIG_DIR/monitor.conf" << EOF
+cat >"$CONFIG_DIR/monitor.conf" <<EOF
 # Job monitoring configuration
 UPDATE_INTERVAL=10
 LOG_RETENTION_DAYS=7
@@ -51,7 +51,7 @@ EOF
 
 # Add monitoring aliases to .zshrc if not already present
 if ! grep -q "# Job monitoring aliases" "$HOME/.zshrc"; then
-    cat >> "$HOME/.zshrc" << 'EOF'
+    cat >>"$HOME/.zshrc" <<'EOF'
 
 # Job monitoring aliases
 alias smr='snakemonitor'  # Snakemake monitor
@@ -64,7 +64,7 @@ EOF
 fi
 
 # Add monitor completion for zsh
-cat > "$CONFIG_DIR/_snakemonitor" << 'EOF'
+cat >"$CONFIG_DIR/_snakemonitor" <<'EOF'
 #compdef snakemonitor
 
 _snakemonitor() {
@@ -82,7 +82,7 @@ _snakemonitor() {
 _snakemonitor "$@"
 EOF
 
-cat > "$CONFIG_DIR/_nextflow-monitor" << 'EOF'
+cat >"$CONFIG_DIR/_nextflow-monitor" <<'EOF'
 #compdef nextflow-monitor
 
 _nextflow_monitor() {
@@ -102,7 +102,7 @@ _nextflow_monitor() {
 _nextflow_monitor "$@"
 EOF
 
-cat > "$CONFIG_DIR/_wdl-monitor" << 'EOF'
+cat >"$CONFIG_DIR/_wdl-monitor" <<'EOF'
 #compdef wdl-monitor
 
 _wdl_monitor() {
@@ -122,7 +122,7 @@ EOF
 
 # Install completions if not already in fpath
 if ! grep -q "$CONFIG_DIR" "$HOME/.zshrc"; then
-    echo -e "\n# Add job monitoring completions to fpath\nfpath=($CONFIG_DIR \$fpath)" >> "$HOME/.zshrc"
+    echo -e "\n# Add job monitoring completions to fpath\nfpath=($CONFIG_DIR \$fpath)" >>"$HOME/.zshrc"
 fi
 
 # Add -r flag to read command

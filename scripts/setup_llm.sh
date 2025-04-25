@@ -14,20 +14,20 @@ log_info "Setting up Azure OpenAI CLI integration..."
 # Check if az CLI is installed
 if ! cmd_exists az; then
     log_info "Azure CLI (az) not found. Installing..."
-    
+
     case "$(detect_platform)" in
-        macos-*)
-            if cmd_exists brew; then
-                brew install azure-cli
-            else
-                log_warning "Homebrew not found. Please install Azure CLI manually:"
-                log_info "Visit: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-macos"
-                exit 1
-            fi
-            ;;
-        *-*)
-            curl -sL https://aka.ms/InstallAzureCLIDeb | bash
-            ;;
+    macos-*)
+        if cmd_exists brew; then
+            brew install azure-cli
+        else
+            log_warning "Homebrew not found. Please install Azure CLI manually:"
+            log_info "Visit: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-macos"
+            exit 1
+        fi
+        ;;
+    *-*)
+        curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+        ;;
     esac
 fi
 
@@ -38,7 +38,7 @@ if ! az extension show --name ml &>/dev/null; then
 fi
 
 # Create the Azure OpenAI functions in .zsh_azure_llm
-cat > "$ZSH_LLM_FILE" << 'ENDZSH'
+cat >"$ZSH_LLM_FILE" <<'ENDZSH'
 # Azure OpenAI CLI integration for terminal
 
 # Configuration file
@@ -134,7 +134,7 @@ ENDZSH
 
 # Add source command to .zshrc if not already present
 if ! grep -q "source.*\.zsh_azure_llm" "$HOME/.zshrc"; then
-    echo -e "\n# Azure OpenAI CLI integration\nsource \$HOME/.zsh_azure_llm" >> "$HOME/.zshrc"
+    echo -e "\n# Azure OpenAI CLI integration\nsource \$HOME/.zsh_azure_llm" >>"$HOME/.zshrc"
 fi
 
 log_success "Azure OpenAI CLI integration setup complete!"

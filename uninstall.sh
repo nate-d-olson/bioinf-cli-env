@@ -16,7 +16,7 @@ log_info "Uninstalling bioinformatics CLI environment..."
 remove_line() {
     local file="$1"
     local pattern="$2"
-    
+
     if [[ -f "$file" ]]; then
         sed -i.bak "/$pattern/d" "$file"
         rm -f "${file}.bak"
@@ -39,7 +39,7 @@ if [[ -d "$MICROMAMBA_ROOT" ]]; then
             [[ "$env" == "base" ]] && continue
             micromamba env remove -y -n "$env"
         done < <(micromamba env list | tail -n +3 | cut -f1 -d' ')
-        
+
         # Remove micromamba installation
         rm -rf "$MICROMAMBA_ROOT"
         rm -f "$BIN_DIR/micromamba"
@@ -55,8 +55,8 @@ done
 # Remove monitoring tools
 log_info "Removing monitoring tools..."
 rm -f "$BIN_DIR/snakemonitor" \
-      "$BIN_DIR/nextflow-monitor" \
-      "$BIN_DIR/wdl-monitor"
+    "$BIN_DIR/nextflow-monitor" \
+    "$BIN_DIR/wdl-monitor"
 
 # Remove Azure OpenAI integration
 log_info "Removing Azure OpenAI integration..."
