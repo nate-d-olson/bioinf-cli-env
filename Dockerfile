@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv \
     jq \
     parallel \
-    libfuse \
+    libfuse2 \
     libevent-dev \
     libncurses-dev \
     build-essential \
