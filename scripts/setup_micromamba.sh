@@ -27,25 +27,31 @@ install_micromamba() {
     local os=$(get_os "$platform")
     local arch=$(get_arch "$platform")
 
+    log_info "Detected platform: $platform (OS: $os, Arch: $arch)"
+
     # Platform-specific download URLs
-    if [[ "$os" == "macos" ]]; then
+    if [[ "$os" == "darwin" ]]; then
         if [[ "$arch" == "arm64" ]]; then
             # Apple Silicon (M1/M2)
+            log_info "Installing micromamba for macOS ARM64 (Apple Silicon)..."
             curl -Ls https://micro.mamba.pm/api/micromamba/osx-arm64/latest | tar -xvj bin/micromamba
         else
             # Intel Mac
+            log_info "Installing micromamba for macOS x86_64 (Intel)..."
             curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
         fi
     elif [[ "$os" == "linux" || "$os" == "ubuntu" || "$os" == "debian" || "$os" == "redhat" ]]; then
         if [[ "$arch" == "arm64" ]]; then
             # ARM Linux
+            log_info "Installing micromamba for Linux ARM64..."
             curl -Ls https://micro.mamba.pm/api/micromamba/linux-aarch64/latest | tar -xvj bin/micromamba
         else
             # x86_64 Linux
+            log_info "Installing micromamba for Linux x86_64..."
             curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
         fi
     else
-        die "Unsupported platform: $os-$arch"
+        die "Unsupported platform: $platform (OS: $os, Arch: $arch)"
     fi
 
     # Move to the bin directory
