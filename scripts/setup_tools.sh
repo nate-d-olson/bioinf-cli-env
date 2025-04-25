@@ -23,12 +23,22 @@ install_via_package_manager() {
   local installer="$1"
   local tools=("${@:2}")
   
+  # Add zsh to the list of tools if not already present
+  if [[ " $installer " =~ " apt " || " $installer " =~ " yum " || " $installer " =~ " brew " ]]; then
+    if ! printf '%s\n' "${tools[@]}" | grep -q -x "zsh"; then
+      tools+=("zsh")
+    fi
+  fi
+
   case "$installer" in
     brew)
-      log_info "Installing tools via Homebrew..."
+      log_info "Installing/updating tools via Homebrew..."
+      # Update brew first
+      brew update
       for tool in "${tools[@]}"; do
         if brew list "$tool" &>/dev/null; then
-          log_success "$tool is already installed"
+          log_success "$tool is already installed, checking for updates..."
+          brew upgrade "$tool"
         else
           log_info "Installing $tool..."
           if brew install "$tool"; then
@@ -40,7 +50,7 @@ install_via_package_manager() {
       done
       ;;
     apt)
-      log_info "Installing tools via apt..."
+      log_info "Installing/updating tools via apt..."
       # Check if we have sudo access
       local sudo_cmd=""
       if cmd_exists sudo && sudo -n true 2>/dev/null; then
@@ -50,12 +60,18 @@ install_via_package_manager() {
       # First update package lists
       if [[ -n "$sudo_cmd" ]]; then
         $sudo_cmd apt-get update
+      else
+        log_warning "No sudo access. Cannot update package lists."
       fi
       
       for tool in "${tools[@]}"; do
         # Check if tool is already installed
-        if dpkg -l | grep -q "$tool"; then
+        if dpkg -l | grep -qw "$tool"; then
           log_success "$tool is already installed"
+          # Optionally attempt to upgrade
+          # if [[ -n "$sudo_cmd" ]]; then
+          #   $sudo_cmd apt-get install --only-upgrade -y "$tool"
+          # fi
         else
           log_info "Installing $tool..."
           if [[ -n "$sudo_cmd" ]]; then
@@ -71,17 +87,26 @@ install_via_package_manager() {
       done
       ;;
     yum)
-      log_info "Installing tools via yum..."
+      log_info "Installing/updating tools via yum..."
       # Check if we have sudo access
       local sudo_cmd=""
       if cmd_exists sudo && sudo -n true 2>/dev/null; then
         sudo_cmd="sudo"
       fi
       
+      # Update check
+      # if [[ -n "$sudo_cmd" ]]; then
+      #   $sudo_cmd yum check-update
+      # fi
+
       for tool in "${tools[@]}"; do
         # Check if tool is already installed
-        if rpm -qa | grep -q "$tool"; then
+        if rpm -q "$tool" &>/dev/null; then
           log_success "$tool is already installed"
+          # Optionally attempt to upgrade
+          # if [[ -n "$sudo_cmd" ]]; then
+          #   $sudo_cmd yum update -y "$tool"
+          # fi
         else
           log_info "Installing $tool..."
           if [[ -n "$sudo_cmd" ]]; then
@@ -123,7 +148,8 @@ get_latest_release_url() {
   fi
   
   # Extract download URL for the specified pattern
-  local download_url=$(echo "$release_info" | grep -o "\"browser_download_url\": \"[^\"]*$pattern[^\"]*\"" | head -n 1 | cut -d '"' -f 4)
+  local download_url  # Declare variable first
+  download_url=$(echo "$release_info" | grep -o "\"browser_download_url\": \"[^\"]*$pattern[^\"]*\"" | head -n 1 | cut -d '"' -f 4)
   
   if [[ -z "$download_url" ]]; then
     log_error "Could not find release asset matching pattern: $pattern"
@@ -169,7 +195,8 @@ case "$INSTALLER" in
     
     # Create symlinks for fd-find
     if cmd_exists fdfind && ! cmd_exists fd; then
-      ln -sf $(which fdfind) "$BIN_DIR/fd"
+      # Quote command substitution to prevent word splitting
+      ln -sf "$(which fdfind)" "$BIN_DIR/fd"
       log_success "Created fd symlink for fd-find"
     fi
     ;;
