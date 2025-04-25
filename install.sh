@@ -84,12 +84,12 @@ for file in .zshrc .p10k.zsh .nanorc .tmux.conf; do
 done
 
 # Install components based on configuration/user choices
-if ask "Install Oh My Zsh and Powerlevel10k?" "INSTALL_OH_MY_ZSH"; then
-    bash "$SCRIPTS_DIR/setup_omz.sh" "$CONFIG_DIR"
-fi
-
 if ask "Install modern CLI tools (eza, bat, ripgrep, etc)?" "INSTALL_MODERN_TOOLS"; then
     bash "$SCRIPTS_DIR/setup_tools.sh" "$INSTALLER"
+fi
+
+if ask "Install Oh My Zsh and Powerlevel10k?" "INSTALL_OH_MY_ZSH"; then
+    bash "$SCRIPTS_DIR/setup_omz.sh" "$CONFIG_DIR"
 fi
 
 if ask "Install micromamba and bioinformatics environment?" "INSTALL_MICROMAMBA"; then
@@ -98,9 +98,9 @@ if ask "Install micromamba and bioinformatics environment?" "INSTALL_MICROMAMBA"
 fi
 
 ## %%TODO%% fix not currently working in docker
-# if ask "Install Azure OpenAI CLI integration?"; then
-#  bash "$SCRIPTS_DIR/setup_llm.sh"
-# fi
+if ask "Install Azure OpenAI CLI integration?"; then
+ bash "$SCRIPTS_DIR/setup_llm.sh"
+fi
 
 if ask "Install job monitoring tools?" "INSTALL_JOB_MONITORING"; then
     bash "$SCRIPTS_DIR/setup_monitoring.sh"
