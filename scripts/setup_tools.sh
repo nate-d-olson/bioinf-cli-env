@@ -138,17 +138,8 @@ get_latest_release_url() {
   
   # Try to fetch latest release info
   local release_info
-  if cmd_exists curl; then
-    release_info=$(curl -s "$url")
-  elif cmd_exists wget; then
-    release_info=$(wget -q -O- "$url")
-  else
-    log_error "Neither curl nor wget available for GitHub API request"
-    return 1
-  fi
-  
-  # Extract download URL for the specified pattern
-  local download_url  # Declare variable first
+  local download_url
+  release_info=$(curl -s "$url")
   download_url=$(echo "$release_info" | grep -o "\"browser_download_url\": \"[^\"]*$pattern[^\"]*\"" | head -n 1 | cut -d '"' -f 4)
   
   if [[ -z "$download_url" ]]; then

@@ -125,6 +125,9 @@ if ! grep -q "$CONFIG_DIR" "$HOME/.zshrc"; then
     echo -e "\n# Add job monitoring completions to fpath\nfpath=($CONFIG_DIR \$fpath)" >> "$HOME/.zshrc"
 fi
 
+# Add -r flag to read command
+read -r -p "This will remove all bioinf-cli-env components. Continue? [y/N] " confirm
+
 log_success "Job monitoring tools setup complete!"
 log_info "Available commands:"
 log_info "  snakemonitor     - Monitor Snakemake workflows"

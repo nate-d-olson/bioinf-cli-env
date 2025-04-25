@@ -24,7 +24,7 @@ remove_line() {
 }
 
 # Ask for confirmation before proceeding
-read -p "This will remove all bioinf-cli-env components. Continue? [y/N] " confirm
+read -r -p "This will remove all bioinf-cli-env components. Continue? [y/N] " confirm
 if [[ ! "$confirm" =~ ^[Yy] ]]; then
     log_info "Uninstall cancelled."
     exit 0

@@ -58,7 +58,7 @@ ask() {
     local config_key="$2"
     
     if [[ "$INTERACTIVE" == "true" ]]; then
-        read -p "$prompt [Y/n] " yn
+        read -r -p "$prompt [Y/n] " yn
         [[ "$yn" != [Nn]* ]]
     else
         # Get value from config.ini

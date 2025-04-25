@@ -117,8 +117,7 @@ install_config_file() {
       
       # Check if new config has the marker
       if ! grep -q "# === USER CUSTOMIZATIONS BELOW ===" "$dest"; then
-        echo "" >> "$dest"
-        echo "# === USER CUSTOMIZATIONS BELOW ===" >> "$dest"
+        echo -e "\n# === USER CUSTOMIZATIONS BELOW ===\n# Add your custom configurations here" >> "$dest"
       fi
       
       # Append user customizations after the marker
@@ -130,9 +129,7 @@ install_config_file() {
       
       # Add customization marker
       if ! grep -q "# === USER CUSTOMIZATIONS BELOW ===" "$dest"; then
-        echo "" >> "$dest"
-        echo "# === USER CUSTOMIZATIONS BELOW ===" >> "$dest"
-        echo "# Add your custom configurations here" >> "$dest"
+        echo -e "\n# === USER CUSTOMIZATIONS BELOW ===\n# Add your custom configurations here" >> "$dest"
       fi
     fi
   else
@@ -141,9 +138,7 @@ install_config_file() {
     
     # Add customization marker
     if ! grep -q "# === USER CUSTOMIZATIONS BELOW ===" "$dest"; then
-      echo "" >> "$dest"
-      echo "# === USER CUSTOMIZATIONS BELOW ===" >> "$dest"
-      echo "# Add your custom configurations here" >> "$dest"
+      echo -e "\n# === USER CUSTOMIZATIONS BELOW ===\n# Add your custom configurations here" >> "$dest"
     fi
   fi
   

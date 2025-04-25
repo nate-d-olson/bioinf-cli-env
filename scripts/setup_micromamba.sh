@@ -164,3 +164,6 @@ case "$ACTION" in
     exit 1
     ;;
 esac
+
+# Add -r flag to read command
+read -r -p "This will remove all bioinf-cli-env components. Continue? [y/N] " confirm

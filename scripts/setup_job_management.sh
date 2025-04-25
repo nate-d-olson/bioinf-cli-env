@@ -310,7 +310,7 @@ OUTPUT_FILE="${JOB_NAME}.sh"
 
 # Check if output file already exists
 if [[ -f "$OUTPUT_FILE" ]]; then
-  read -p "File $OUTPUT_FILE already exists. Overwrite? [y/N] " confirm
+  read -r -p "File $OUTPUT_FILE already exists. Overwrite? [y/N] " confirm
   if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
     echo "Cancelled."
     exit 0

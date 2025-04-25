@@ -43,7 +43,7 @@ fi
 
 # Helper to ask yes/no questions
 ask() {
-  read -p "$1 [Y/n] " yn
+  read -r -p "$1 [Y/n] " yn
   [[ -z "$yn" || "$yn" != [Nn]* ]]
 }
 
@@ -84,7 +84,8 @@ list_hosts() {
 sync_to_multiple() {
   local hosts=("$@")
   for host_nickname in "${hosts[@]}"; do
-    local host=$(get_host "$host_nickname")
+    local host
+    host=$(get_host "$host_nickname")
     log_info "🔄 Syncing to $host_nickname ($host)..."
     sync_to_remote "$host"
     echo ""
@@ -94,16 +95,17 @@ sync_to_multiple() {
 # Command to sync from local to remote
 sync_to_remote() {
   local host="$1"
-  local backup_dir="$HOME/.config/bioinf-cli-env/backups/sync.$(date +%Y%m%d%H%M%S)"
+  local backup_dir
+  backup_dir="$HOME/.config/bioinf-cli-env/backups/sync.$(date +%Y%m%d%H%M%S)"
   
   log_info "📦 Creating backup on $host before syncing"
-  ssh "$host" "mkdir -p $backup_dir"
+  ssh "$host" "mkdir -p \"$backup_dir\""
   
   # Sync configuration files
   for file in "${CONFIG_FILES[@]}"; do
     if [[ -f "$HOME/$file" ]]; then
       log_info "  → Backing up and syncing $file to $host"
-      ssh "$host" "if [[ -f $HOME/$file ]]; then mkdir -p $(dirname $backup_dir/$file); cp $HOME/$file $backup_dir/$file; fi"
+      ssh "$host" "if [[ -f \"$HOME/$file\" ]]; then mkdir -p \"$(dirname \"$backup_dir/$file\")\"; cp \"$HOME/$file\" \"$backup_dir/$file\"; fi"
       scp "$HOME/$file" "$host:$HOME/"
     fi
   done
@@ -115,23 +117,23 @@ sync_to_remote() {
       log_info "  → Syncing directory $dirname to $host"
       
       # Create target directory on remote host
-      ssh "$host" "mkdir -p $dir"
+      ssh "$host" "mkdir -p \"$dir\""
       
       # Backup existing files
-      ssh "$host" "if [[ -d $dir ]]; then mkdir -p $backup_dir/$dirname; cp -r $dir/* $backup_dir/$dirname/ 2>/dev/null || true; fi"
+      ssh "$host" "if [[ -d \"$dir\" ]]; then mkdir -p \"$backup_dir/$dirname\"; cp -r \"$dir\"/* \"$backup_dir/$dirname/\" 2>/dev/null || true; fi"
       
       # Rsync the directory (exclude temporary and backup files)
       rsync -az --exclude="*.bak" --exclude="*.tmp" --exclude="*.log" "$dir/" "$host:$dir/"
       
       # Ensure scripts are executable
       if [[ "$dirname" == "bin" ]]; then
-        ssh "$host" "chmod +x $dir/* 2>/dev/null || true"
+        ssh "$host" "chmod +x \"$dir\"/* 2>/dev/null || true"
       fi
     fi
   done
   
   # Ensure the workflow monitor scripts are executable
-  ssh "$host" "chmod +x $HOME/bioinf-cli-env/scripts/workflow_monitors/*.sh 2>/dev/null || true"
+  ssh "$host" "chmod +x \"$HOME/bioinf-cli-env/scripts/workflow_monitors/*.sh\" 2>/dev/null || true"
   
   log_info "✅ Sync to $host complete."
   log_info "   Backup available at $backup_dir on the remote host."
@@ -147,14 +149,15 @@ sync_to_remote() {
 # Command to sync from remote to local
 sync_from_remote() {
   local host="$1"
-  local backup_dir="$HOME/.config/bioinf-cli-env/backups/sync.$(date +%Y%m%d%H%M%S)"
+  local backup_dir
+  backup_dir="$HOME/.config/bioinf-cli-env/backups/sync.$(date +%Y%m%d%H%M%S)"
   
   log_info "📦 Creating local backup before syncing from $host"
   mkdir -p "$backup_dir"
   
   # Sync configuration files
   for file in "${CONFIG_FILES[@]}"; do
-    if ssh "$host" "[[ -f $HOME/$file ]]"; then
+    if ssh "$host" "[[ -f \"$HOME/$file\" ]]"; then
       log_info "  → Backing up and syncing $file from $host"
       if [[ -f "$HOME/$file" ]]; then
         mkdir -p "$(dirname "$backup_dir/$file")"
@@ -166,7 +169,7 @@ sync_from_remote() {
   
   # Sync script directories
   for dir in "${SCRIPT_DIRS[@]}"; do
-    if ssh "$host" "[[ -d $dir ]]"; then
+    if ssh "$host" "[[ -d \"$dir\" ]]"; then
       local dirname=$(basename "$dir")
       log_info "  → Syncing directory $dirname from $host"
       
