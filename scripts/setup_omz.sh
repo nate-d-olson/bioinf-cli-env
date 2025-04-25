@@ -215,14 +215,19 @@ else
   log_success "Powerlevel10k already configured."
 fi
 
-# Set zsh as default shell if it isn't already
-if [[ "$SHELL" != *"zsh"* ]]; then
-  log_info "Setting zsh as default shell..."
-  if command -v chsh >/dev/null 2>&1; then
-    chsh -s "$(which zsh)"
-    log_success "zsh set as default shell"
-  else
-    log_warning "Could not set zsh as default shell. Please run: chsh -s $(which zsh)"
+# Skip changing the default shell in Docker
+if grep -q docker /proc/1/cgroup 2>/dev/null; then
+  log_warning "Running in a Docker container. Skipping 'chsh' command."
+else
+  # Set zsh as default shell if it isn't already
+  if [[ "$SHELL" != *"zsh"* ]]; then
+    log_info "Setting zsh as default shell..."
+    if command -v chsh >/dev/null 2>&1; then
+      chsh -s "$(which zsh)"
+      log_success "zsh set as default shell"
+    else
+      log_warning "Could not set zsh as default shell. Please run: chsh -s $(which zsh)"
+    fi
   fi
 fi
 
