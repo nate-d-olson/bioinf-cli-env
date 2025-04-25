@@ -357,3 +357,26 @@ show_progress() {
         echo
     fi
 }
+
+# Safe download function
+safe_download() {
+    local url="$1"
+    local output="$2"
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$url" -o "$output"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q "$url" -O "$output"
+    else
+        log_error "Neither curl nor wget is available for downloading."
+        return 1
+    fi
+
+    if [[ ! -f "$output" ]]; then
+        log_error "Failed to download $url to $output."
+        return 1
+    fi
+
+    log_success "Downloaded $url to $output."
+    return 0
+}
