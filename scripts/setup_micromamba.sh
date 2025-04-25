@@ -154,6 +154,37 @@ EOF
     log_info "To activate your environment, restart your shell and run: bioinf"
 }
 
+# Cleanup micromamba environments and installation
+cleanup_micromamba() {
+    log_info "Cleaning up micromamba..."
+    
+    # Check if micromamba exists
+    if cmd_exists micromamba; then
+        # List and remove all environments except base
+        while IFS= read -r env; do
+            [[ "$env" == "base" || -z "$env" ]] && continue
+            log_info "Removing environment: $env"
+            micromamba env remove -y -n "$env" || log_warning "Failed to remove environment: $env"
+        done < <(micromamba env list | tail -n +3 | awk '{print $1}')
+        
+        # Remove micromamba binaries and root directory if needed
+        if [[ -d "$MICROMAMBA_ROOT" ]]; then
+            log_info "Removing micromamba root directory: $MICROMAMBA_ROOT"
+            rm -rf "$MICROMAMBA_ROOT"
+        fi
+        
+        if [[ -f "$BIN_DIR/micromamba" ]]; then
+            log_info "Removing micromamba binary"
+            rm -f "$BIN_DIR/micromamba"
+        fi
+    else
+        log_warning "Micromamba not found in PATH"
+    fi
+    
+    log_success "Micromamba cleanup complete"
+    return 0
+}
+
 # Main execution
 case "$ACTION" in
 "install")
@@ -164,12 +195,13 @@ case "$ACTION" in
     create_environment
     save_state "bioinf_env" "created"
     ;;
+"cleanup")
+    cleanup_micromamba
+    save_state "micromamba" "removed"
+    ;;
 *)
     log_error "Unknown action: $ACTION"
-    echo "Valid actions: install, env-create"
+    echo "Valid actions: install, env-create, cleanup"
     exit 1
     ;;
 esac
-
-# Add -r flag to read command
-read -r -p "This will remove all bioinf-cli-env components. Continue? [y/N] " confirm
