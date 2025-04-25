@@ -149,6 +149,11 @@ detect_platform() {
     echo "${os}_${arch}${variant:+_}${variant}"
 }
 
+# Check if a command exists
+cmd_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
 get_os() {
     echo "$1" | cut -d'_' -f1
 }
