@@ -104,7 +104,7 @@ install_config_file() {
   # Check if destination file exists
   if [[ -f "$dest" ]]; then
     # Backup existing file
-    backup_file "$dest" "$backup_dir"
+    backup_config "$dest" "$backup_dir"
     
     # Check if file has custom user changes
     if grep -q "# === USER CUSTOMIZATIONS BELOW ===" "$dest"; then
