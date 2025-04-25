@@ -149,6 +149,11 @@ detect_platform() {
     echo "${os}_${arch}${variant:+_}${variant}"
 }
 
+# Check if a command exists
+cmd_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
 get_os() {
     echo "$1" | cut -d'_' -f1
 }
@@ -280,7 +285,7 @@ add_to_path() {
 }
 
 # File operations
-backup_file() {
+backup_config() {  # Renamed from backup_file
     local file=$1
     local backup_dir=${2:-"${HOME}/.local/backup/bioinf-cli-env"}
     local timestamp
