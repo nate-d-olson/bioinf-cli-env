@@ -93,7 +93,7 @@ if ask "Install Oh My Zsh and Powerlevel10k?" "INSTALL_OH_MY_ZSH"; then
 fi
 
 if ask "Install micromamba and bioinformatics environment?" "INSTALL_MICROMAMBA"; then
-    bash "$SCRIPTS_DIR/setup_micromamba.sh" "$INSTALLER"
+    bash "$SCRIPTS_DIR/setup_micromamba.sh"
     bash "$SCRIPTS_DIR/setup_micromamba.sh" env-create "$CONFIG_DIR/micromamba-config.yaml"
 fi
 
