@@ -151,7 +151,7 @@ This Docker image can be used for continuous integration testing. Example GitHub
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: 
+    container:
       image: bioinf-cli-env:latest
     steps:
       - name: Test micromamba

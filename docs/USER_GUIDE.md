@@ -5,6 +5,7 @@ This guide provides instructions on using the bioinformatics command-line enviro
 ## Overview
 
 This environment includes:
+
 - Zsh configuration with Oh My Zsh and Powerlevel10k
 - Micromamba for bioinformatics package management
 - SLURM job monitoring tools
@@ -23,6 +24,7 @@ Run the install script to set up the environment:
 ```
 
 This will:
+
 1. Install Oh My Zsh and Powerlevel10k if not already installed
 2. Configure zsh with essential plugins
 3. Set up the Bioinformatics micromamba environment
@@ -32,6 +34,7 @@ This will:
 ### Configuration Overview
 
 Key configuration files:
+
 - `~/.zshrc` - Main shell configuration
 - `~/.p10k.zsh` - Powerlevel10k theme configuration
 - `~/.nanorc` - Nano editor configuration
@@ -70,7 +73,7 @@ create_job myjob 4 16 24  # Name, cores, memory(GB), time(hours)
 To configure and use Azure OpenAI:
 
 ```bash
-llm-setup     # Configure your Azure OpenAI deployment 
+llm-setup     # Configure your Azure OpenAI deployment
 llm "What is the BLAST algorithm?"  # Ask the LLM a question
 ```
 

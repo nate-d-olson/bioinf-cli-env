@@ -97,6 +97,7 @@ Dedicated monitoring tools that provide:
 - Visual indicators of progress and status
 
 Available for:
+
 - **Snakemake** workflows (`snakemake_monitor.sh`)
 - **Nextflow** workflows (`nextflow_monitor.sh`)
 - **WDL/Cromwell** workflows (`wdl_monitor.sh`)

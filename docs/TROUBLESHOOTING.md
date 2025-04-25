@@ -9,6 +9,7 @@ This guide provides solutions to common issues you might encounter when using th
 **Symptoms:** Missing syntax highlighting, autosuggestions, or other plugin features.
 
 **Solution:**
+
 1. Ensure the plugins are installed:
    ```bash
    ls ~/.oh-my-zsh/custom/plugins/
@@ -25,15 +26,18 @@ This guide provides solutions to common issues you might encounter when using th
 **Symptoms:** Missing icons, broken prompt layout.
 
 **Solution:**
+
 1. Ensure you have installed Nerd Fonts:
+
    ```bash
    # On macOS
    brew tap homebrew/cask-fonts
    brew install --cask font-meslo-lg-nerd-font
-   
+
    # On Linux
    # Download and install from https://github.com/ryanoasis/nerd-fonts/releases
    ```
+
 2. Configure your terminal to use the Nerd Font
 3. Run `p10k configure` to reconfigure the theme
 
@@ -44,6 +48,7 @@ This guide provides solutions to common issues you might encounter when using th
 **Symptoms:** `micromamba activate bioinf` fails or doesn't change the environment.
 
 **Solution:**
+
 1. Check if the environment exists:
    ```bash
    micromamba env list
@@ -60,6 +65,7 @@ This guide provides solutions to common issues you might encounter when using th
 ### Problem: Package conflicts in micromamba environment
 
 **Solution:**
+
 1. Update all packages:
    ```bash
    micromamba update -n bioinf --all
@@ -75,6 +81,7 @@ This guide provides solutions to common issues you might encounter when using th
 ### Problem: `sj` command not found
 
 **Solution:**
+
 1. Ensure the setup_monitoring.sh script has run:
    ```bash
    ./scripts/setup_monitoring.sh
@@ -95,6 +102,7 @@ Check that you have the appropriate SLURM permissions and that the job exists.
 
 **Solution:**
 Install the Azure CLI:
+
 ```bash
 # macOS
 brew install azure-cli
@@ -106,6 +114,7 @@ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ### Problem: Authentication errors with Azure
 
 **Solution:**
+
 1. Log in to Azure:
    ```bash
    az login
@@ -124,6 +133,7 @@ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ### Problem: sync.sh fails with "Host not found"
 
 **Solution:**
+
 1. Check your SSH configuration:
    ```bash
    cat ~/.ssh/config
@@ -138,6 +148,7 @@ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
 **Solution:**
 After syncing, source the zshrc on the remote system:
+
 ```bash
 source ~/.zshrc
 ```
@@ -147,6 +158,7 @@ source ~/.zshrc
 ### Problem: Slow shell startup
 
 **Solution:**
+
 1. Identify slow plugins by temporarily disabling them
 2. Consider using Zinit instead of Oh My Zsh for faster loading
 3. Use profiling to identify bottlenecks:
@@ -157,6 +169,7 @@ source ~/.zshrc
 ## Getting More Help
 
 If you encounter an issue not covered here, please:
+
 1. Check the repository issues: https://github.com/yourusername/bioinf-cli-env/issues
 2. Open a new issue with details about your problem
 3. Share your terminal output and environment details when asking for help

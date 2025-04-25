@@ -34,7 +34,7 @@ sudo chown -R biotest:staff /Users/biotest
 Log in as this user to test installations without affecting your primary environment.
 
 1. Use a Temporary Home Directory
-This method doesn't require creating a new user, but simulates a clean environment:
+   This method doesn't require creating a new user, but simulates a clean environment:
 
 ```bash
 # Create a temporary home directory
@@ -52,7 +52,7 @@ HOME=/tmp/biotest_home ./install.sh
 This approach ensures that all configurations are created in the temporary directory, not affecting your actual home directory.
 
 3. Use Installation Flags for Safe Testing
-The install script supports several flags that can make testing safer:
+   The install script supports several flags that can make testing safer:
 
 ```bash
 # Create a development testing configuration
@@ -80,7 +80,7 @@ Then run the installation with this configuration:
 ```
 
 4. Use Backup and Restore Scripts
-Before testing, you can create a backup script to save your important configurations:
+   Before testing, you can create a backup script to save your important configurations:
 
 ```bash
 #!/bin/bash
@@ -125,7 +125,7 @@ echo "Restoration complete"
 ```
 
 5. Test Component-by-Component
-Instead of running the full installer, you can test individual component scripts:
+   Instead of running the full installer, you can test individual component scripts:
 
 ```bash
 # Test only the modern tools installation
@@ -152,6 +152,7 @@ bash scripts/workflow_monitors/snakemake_monitor.sh test_data/sample_snakemake.l
 ```
 
 ## Reverting Changes During Development
+
 If you encounter issues during testing, you can use the backup created by the installer:
 
 ```bash
@@ -172,6 +173,7 @@ HOME=/tmp/biotest_home ./uninstall.sh
 ```
 
 ## Automating Testing
+
 You can create a test script that combines these approaches:
 
 ```bash
@@ -188,16 +190,16 @@ cp -r "$(pwd)" "$TEST_REPO"
 (
     cd "$TEST_REPO"
     HOME="$TEST_HOME" ./install.sh --non-interactive --config config.ini.template
-    
+
     # Verify installation
     if [[ -f "$TEST_HOME/.zshrc" ]]; then
         echo "✅ .zshrc installed correctly"
     else
         echo "❌ .zshrc missing"
     fi
-    
+
     # Additional verification steps...
-    
+
     # Clean up
     HOME="$TEST_HOME" ./uninstall.sh --non-interactive
     rm -rf "$TEST_HOME" "$TEST_REPO"

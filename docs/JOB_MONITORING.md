@@ -22,13 +22,15 @@ create_job <job_name> [cores] [memory_gb] [time_hours]
 ```
 
 Example:
+
 ```bash
 create_job align_genome 8 32 12
 ```
 
 This creates a job script called `align_genome.sh` with:
+
 - 8 CPU cores
-- 32GB of memory 
+- 32GB of memory
 - 12-hour time limit
 
 ### Other SLURM Aliases
@@ -62,6 +64,7 @@ The `snakemake_monitor.sh` script provides enhanced monitoring for Snakemake wor
 ```
 
 This will:
+
 1. Run the Snakemake workflow with the provided arguments
 2. Show real-time rule execution progress
 3. Display resource usage statistics
@@ -76,6 +79,7 @@ For Nextflow workflows:
 ```
 
 This monitors:
+
 - Process execution
 - Resource usage per process
 - Execution timeline
@@ -95,10 +99,11 @@ For Cromwell/WDL workflows:
 To receive notifications when jobs complete:
 
 1. Edit your ~/.zsh_work file to set notification preferences:
+
    ```bash
    # Email notifications (uncomment and customize)
    # export JOB_NOTIFY_EMAIL="your.email@example.com"
-   
+
    # Terminal notifications (if using a local terminal)
    export JOB_NOTIFY_TERMINAL=true
    ```
