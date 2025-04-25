@@ -98,7 +98,7 @@ if ask "Install micromamba and bioinformatics environment?" "INSTALL_MICROMAMBA"
 fi
 
 ## %%TODO%% fix not currently working in docker
-if ask "Install Azure OpenAI CLI integration?"; then
+if ask "Install Azure OpenAI CLI integration?" "INSTALL_AZURE_LLM"; then
  bash "$SCRIPTS_DIR/setup_llm.sh"
 fi
 
