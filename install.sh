@@ -44,7 +44,7 @@ if [[ -n "$CONFIG_FILE" ]]; then
         die "Configuration file not found: $CONFIG_FILE"
     fi
     if [[ "$CONFIG_FILE" != "$CONFIG_INI" ]]; then
-        cp "$CONFIG_FILE" "$CONFIG_INI"
+         CONFIG_INI="$CONFIG_FILE"
     else
         log_info "Source and destination are the same: $CONFIG_INI. Skipping copy."
     fi
