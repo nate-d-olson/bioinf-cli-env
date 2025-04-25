@@ -94,7 +94,7 @@ create_environment() {
   
   # Extract environment name from yaml with better parsing
   if cmd_exists yq; then
-    ENV_NAME=$(yq eval '.name' "$CONFIG_FILE")
+    ENV_NAME=$(yq eval 'name' "$CONFIG_FILE")
   else
     ENV_NAME=$(grep -m 1 "^name:" "$CONFIG_FILE" | cut -d ':' -f 2 | tr -d ' ')
   fi
