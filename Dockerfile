@@ -60,8 +60,8 @@ RUN cp /home/$USERNAME/bioinf-cli-env/config.ini.template /home/$USERNAME/bioinf
     && sed -i 's/INSTALL_AZURE_OPENAI=.*/INSTALL_AZURE_OPENAI=false/' /home/$USERNAME/bioinf-cli-env/config.ini
 
 # Install the environment
-RUN cd /home/$USERNAME/bioinf-cli-env \
-    && ./install.sh --non-interactive --config /home/$USERNAME/bioinf-cli-env/config.ini
+WORKDIR /home/$USERNAME/bioinf-cli-env
+RUN ./install.sh --non-interactive --config /home/$USERNAME/bioinf-cli-env/config.ini
 
 # Set zsh as the default shell for the non-root user
 RUN usermod --shell /usr/bin/zsh $USERNAME
