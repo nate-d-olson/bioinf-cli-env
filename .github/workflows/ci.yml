@@ -20,7 +20,7 @@ jobs:
           sed -i 's/INSTALL_MICROMAMBA=.*/INSTALL_MICROMAMBA=true/' config.ini
           sed -i 's/INSTALL_OMZ=.*/INSTALL_OMZ=true/' config.ini
           sed -i 's/INSTALL_TOOLS=.*/INSTALL_TOOLS=true/' config.ini
-          sed -i 's/INSTALL_JOB_MONITORING=.*/INSTALL_JOB_MONITORING=true/' config.ini
+          sed -i 's/INSTALL_JOB_MONITORING=.*/INSTALL_JOB_MONITORING=false/' config.ini
           cat config.ini
       
       - name: Run installation script
