@@ -23,21 +23,25 @@ cleanup() {
     local exit_code=$?
     log_info "Performing cleanup..."
     
-    # Remove temporary files
-    for file in "${TEMP_FILES[@]}"; do
-        if [[ -f "$file" ]]; then
-            rm -f "$file"
-            log_debug "Removed temporary file: $file"
-        fi
-    done
+    # Remove temporary files if any exist
+    if [[ ${#TEMP_FILES[@]} -gt 0 ]]; then
+        for file in "${TEMP_FILES[@]}"; do
+            if [[ -f "$file" ]]; then
+                rm -f "$file"
+                log_debug "Removed temporary file: $file"
+            fi
+        done
+    fi
     
-    # Remove temporary directories
-    for dir in "${TEMP_DIRS[@]}"; do
-        if [[ -d "$dir" ]]; then
-            rm -rf "$dir"
-            log_debug "Removed temporary directory: $dir"
-        fi
-    done
+    # Remove temporary directories if any exist
+    if [[ ${#TEMP_DIRS[@]} -gt 0 ]]; then
+        for dir in "${TEMP_DIRS[@]}"; do
+            if [[ -d "$dir" ]]; then
+                rm -rf "$dir"
+                log_debug "Removed temporary directory: $dir"
+            fi
+        done
+    fi
     
     exit "$exit_code"
 }
