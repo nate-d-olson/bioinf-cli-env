@@ -10,21 +10,21 @@ ENV TZ=Etc/UTC
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl=7.88.1-* \
-    git=1:2.39.2-* \
-    wget=1.21.3-* \
-    zsh=5.9-* \
-    nano=7.2-* \
-    tmux=3.3a-* \
-    python3=3.11.4-* \
-    python3-pip=23.0.1-* \
-    python3-venv=3.11.4-* \
-    jq=1.6-* \
-    parallel=20230322-* \
-    libfuse2=2.9.9-* \
-    libevent-dev=2.1.12-* \
-    libncurses-dev=6.4-* \
-    build-essential=12.9-* \
+    curl \
+    git \
+    wget \
+    zsh \
+    nano \
+    tmux \
+    python3 \
+    python3-pip \
+    python3-venv \
+    jq \
+    parallel \
+    libfuse \
+    libevent-dev \
+    libncurses-dev \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Create and set up non-root user
