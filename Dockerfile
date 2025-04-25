@@ -63,6 +63,9 @@ RUN cp /home/$USERNAME/bioinf-cli-env/config.ini.template /home/$USERNAME/bioinf
 RUN cd /home/$USERNAME/bioinf-cli-env \
     && ./install.sh --non-interactive --config /home/$USERNAME/bioinf-cli-env/config.ini
 
+# Set zsh as the default shell for the non-root user
+RUN usermod --shell /usr/bin/zsh $USERNAME
+
 # Set up entrypoint initialization script
 RUN echo '#!/bin/bash\n\
 # Source zsh config\n\
