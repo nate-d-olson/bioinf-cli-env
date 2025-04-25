@@ -51,10 +51,14 @@ install_via_package_manager() {
         ;;
     apt)
         log_info "Installing/updating tools via apt..."
-        # Check if we have sudo access
+        
+        # Get sudo command with proper interactive prompting
         local sudo_cmd=""
-        if cmd_exists sudo && sudo -n true 2>/dev/null; then
-            sudo_cmd="sudo"
+        local no_interactive="${INTERACTIVE:-false}"
+        if [[ "$no_interactive" == "false" ]]; then
+            sudo_cmd=$(get_sudo_command "Administrator privileges are required to install packages via apt" "false")
+        else 
+            sudo_cmd=$(get_sudo_command "Administrator privileges are required to install packages via apt" "true")
         fi
 
         # First update package lists
@@ -88,16 +92,15 @@ install_via_package_manager() {
         ;;
     yum)
         log_info "Installing/updating tools via yum..."
-        # Check if we have sudo access
+        
+        # Get sudo command with proper interactive prompting
         local sudo_cmd=""
-        if cmd_exists sudo && sudo -n true 2>/dev/null; then
-            sudo_cmd="sudo"
+        local no_interactive="${INTERACTIVE:-false}"
+        if [[ "$no_interactive" == "false" ]]; then
+            sudo_cmd=$(get_sudo_command "Administrator privileges are required to install packages via yum" "false")
+        else 
+            sudo_cmd=$(get_sudo_command "Administrator privileges are required to install packages via yum" "true")
         fi
-
-        # Update check
-        # if [[ -n "$sudo_cmd" ]]; then
-        #   $sudo_cmd yum check-update
-        # fi
 
         for tool in "${tools[@]}"; do
             # Check if tool is already installed
@@ -373,7 +376,15 @@ user-space)
     fi
 
     # Install htop and tmux only if we have sudo (these are harder to compile/install as binaries)
-    if cmd_exists sudo && sudo -n true 2>/dev/null; then
+    local sudo_cmd=""
+    local no_interactive="${INTERACTIVE:-false}"
+    if [[ "$no_interactive" == "false" ]]; then
+        sudo_cmd=$(get_sudo_command "Administrator privileges are required to install htop and tmux" "false")
+    else 
+        sudo_cmd=$(get_sudo_command "Administrator privileges are required to install htop and tmux" "true")
+    fi
+    
+    if [[ -n "$sudo_cmd" ]]; then
         case "$OS" in
         macos)
             if cmd_exists brew; then
@@ -383,10 +394,10 @@ user-space)
             fi
             ;;
         ubuntu | debian)
-            sudo apt-get install -y htop tmux
+            $sudo_cmd apt-get install -y htop tmux
             ;;
         redhat)
-            sudo yum install -y htop tmux
+            $sudo_cmd yum install -y htop tmux
             ;;
         *)
             log_warning "Please install htop and tmux manually"

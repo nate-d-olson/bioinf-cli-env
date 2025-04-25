@@ -252,6 +252,7 @@ get_package_manager() {
 # Dependency installation
 install_dependency() {
     local package="$1"
+    local no_interactive=${2:-false}
     local pkg_mgr
     pkg_mgr=$(get_package_manager)
 
@@ -259,10 +260,24 @@ install_dependency() {
         log_info "Installing $package..."
         case "$pkg_mgr" in
         apt)
-            sudo apt-get update && sudo apt-get install -y "$package"
+            local sudo_cmd
+            sudo_cmd=$(get_sudo_command "Administrator privileges are required to install $package" "$no_interactive")
+            if [[ -n "$sudo_cmd" ]]; then
+                $sudo_cmd apt-get update && $sudo_cmd apt-get install -y "$package"
+            else
+                log_warning "Skipping installation of $package (requires sudo)"
+                return 1
+            fi
             ;;
         yum)
-            sudo yum install -y "$package"
+            local sudo_cmd
+            sudo_cmd=$(get_sudo_command "Administrator privileges are required to install $package" "$no_interactive")
+            if [[ -n "$sudo_cmd" ]]; then
+                $sudo_cmd yum install -y "$package"
+            else
+                log_warning "Skipping installation of $package (requires sudo)"
+                return 1
+            fi
             ;;
         brew)
             brew install "$package"
@@ -386,4 +401,48 @@ safe_download() {
 
     log_success "Downloaded $url to $output."
     return 0
+}
+
+# Enhanced sudo access handling
+get_sudo_command() {
+    local prompt=${1:-"Administrator privileges are required for some operations. Do you want to continue?"}
+    local no_interactive=${2:-false}
+    local sudo_cmd=""
+    
+    # Check if sudo exists
+    if ! cmd_exists sudo; then
+        log_warning "sudo command not found. Some operations may fail."
+        return 1
+    fi
+
+    # Check if we already have cached sudo credentials
+    if sudo -n true 2>/dev/null; then
+        sudo_cmd="sudo"
+        echo "$sudo_cmd"
+        return 0
+    fi
+    
+    # If we're running non-interactively, don't prompt
+    if [[ "$no_interactive" == "true" ]]; then
+        log_warning "No sudo access available in non-interactive mode. Some operations may be skipped."
+        return 1
+    fi
+    
+    # Prompt for sudo access
+    log_info "$prompt"
+    read -r -p "Continue with sudo? [Y/n] " yn
+    if [[ "$yn" =~ ^[Yy]$ ]] || [[ -z "$yn" ]]; then
+        # Attempt to get sudo access
+        if sudo -v; then
+            sudo_cmd="sudo"
+            echo "$sudo_cmd"
+            return 0
+        else
+            log_warning "Failed to get sudo access. Some operations may be skipped."
+            return 1
+        fi
+    else
+        log_info "Skipping operations that require sudo."
+        return 1
+    fi
 }

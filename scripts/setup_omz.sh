@@ -15,21 +15,78 @@ if ! cmd_exists zsh; then
     platform=$(detect_platform)
     os=$(get_os "$platform")
 
-    case "$os" in
-    "macos")
-        log_info "macOS: zsh is installed by default."
-        ;;
-    "ubuntu" | "debian")
-        log_info "Ubuntu/Debian: sudo apt install zsh"
-        ;;
-    "redhat")
-        log_info "RHEL/CentOS: sudo yum install zsh"
-        ;;
-    *)
-        log_info "Please install zsh using your system's package manager."
-        ;;
-    esac
-    exit 1
+    # Try to install zsh if we're running interactively
+    if [[ "${INTERACTIVE:-true}" == "true" ]]; then
+        local sudo_cmd=""
+        log_info "Attempting to install zsh automatically..."
+        
+        case "$os" in
+        "macos")
+            if cmd_exists brew; then
+                log_info "Installing zsh via Homebrew..."
+                brew install zsh
+                if cmd_exists zsh; then
+                    log_success "zsh installed successfully."
+                else
+                    log_error "Failed to install zsh. Please install it manually."
+                fi
+            else
+                log_info "macOS: zsh should be installed by default. If not, try installing Homebrew first."
+            fi
+            ;;
+        "ubuntu" | "debian")
+            sudo_cmd=$(get_sudo_command "Administrator privileges are required to install zsh" "false")
+            if [[ -n "$sudo_cmd" ]]; then
+                log_info "Installing zsh via apt..."
+                $sudo_cmd apt-get update && $sudo_cmd apt-get install -y zsh
+                if cmd_exists zsh; then
+                    log_success "zsh installed successfully."
+                else
+                    log_error "Failed to install zsh. Please install it manually: sudo apt install zsh"
+                fi
+            else
+                log_info "Ubuntu/Debian: sudo apt install zsh"
+            fi
+            ;;
+        "redhat")
+            sudo_cmd=$(get_sudo_command "Administrator privileges are required to install zsh" "false")
+            if [[ -n "$sudo_cmd" ]]; then
+                log_info "Installing zsh via yum..."
+                $sudo_cmd yum install -y zsh
+                if cmd_exists zsh; then
+                    log_success "zsh installed successfully."
+                else
+                    log_error "Failed to install zsh. Please install it manually: sudo yum install zsh"
+                fi
+            else
+                log_info "RHEL/CentOS: sudo yum install zsh"
+            fi
+            ;;
+        *)
+            log_info "Please install zsh using your system's package manager."
+            ;;
+        esac
+    else
+        case "$os" in
+        "macos")
+            log_info "macOS: zsh is installed by default."
+            ;;
+        "ubuntu" | "debian")
+            log_info "Ubuntu/Debian: sudo apt install zsh"
+            ;;
+        "redhat")
+            log_info "RHEL/CentOS: sudo yum install zsh"
+            ;;
+        *)
+            log_info "Please install zsh using your system's package manager."
+            ;;
+        esac
+    fi
+    
+    # Check again if zsh was installed
+    if ! cmd_exists zsh; then
+        exit 1
+    fi
 fi
 
 # Create a backup of existing configurations

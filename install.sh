@@ -83,6 +83,9 @@ for file in .zshrc .p10k.zsh .nanorc .tmux.conf; do
     backup_config "$HOME/$file" "$BACKUP_DIR"
 done
 
+# Export interactive flag for sub-scripts
+export INTERACTIVE
+
 # Install components based on configuration/user choices
 if ask "Install modern CLI tools (eza, bat, ripgrep, etc)?" "INSTALL_MODERN_TOOLS"; then
     bash "$SCRIPTS_DIR/setup_tools.sh" "$INSTALLER"
