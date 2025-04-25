@@ -3,10 +3,14 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/utils/common.sh"
+
 BIN_DIR="$HOME/.local/bin"
 mkdir -p "$BIN_DIR"
 
-echo "🧬 Setting up enhanced SLURM job management utilities..."
+log_info "🧬 Setting up enhanced SLURM job management utilities..."
 
 # Create the sj command for SLURM job monitoring
 cat > "$BIN_DIR/sj" << 'ENDSJ'
@@ -570,11 +574,11 @@ fi
 mkdir -p "$HOME/.logs"
 touch "$HOME/.logs/slurm_jobs.log"
 
-echo "✅ Enhanced SLURM job management utilities installed!"
-echo "  Use 'sj' to view and monitor jobs"
-echo "  Use 'create_job' to create job scripts"
-echo "  Use 'srun1' or 'srun8' for interactive sessions"
-echo "  Use 'sbatch-notify' to get notifications when jobs complete"
-echo ""
-echo "These tools will be available after restarting your shell or running:"
-echo "  source ~/.zshrc"
+log_success "Enhanced SLURM job management utilities installed!"
+log_info "  Use 'sj' to view and monitor jobs"
+log_info "  Use 'create_job' to create job scripts"
+log_info "  Use 'srun1' or 'srun8' for interactive sessions"
+log_info "  Use 'sbatch-notify' to get notifications when jobs complete"
+log_info ""
+log_info "These tools will be available after restarting your shell or running:"
+log_info "  source ~/.zshrc"
