@@ -1,95 +1,200 @@
-# Bioinformatics CLI Environment User Guide
+# User Guide
 
-This guide provides instructions on using the bioinformatics command-line environment tools and configurations.
-
-## Overview
-
-This environment includes:
-
-- Zsh configuration with Oh My Zsh and Powerlevel10k
-- Micromamba for bioinformatics package management
-- SLURM job monitoring tools
-- Azure OpenAI CLI integration for easy LLM access
-- Git, AWS, and Docker integrations
-- Cross-system synchronization
+This guide provides comprehensive information about using the bioinformatics CLI
+environment effectively.
 
 ## Getting Started
 
-### Installation
+### First Time Setup
 
-Run the install script to set up the environment:
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/yourusername/bioinf-cli-env.git
+   cd bioinf-cli-env
+   ```
+
+2. Review and customize configuration:
+
+   ```bash
+   cp config.ini.template config.ini
+   nano config.ini
+   ```
+
+3. Run the installer:
+
+   ```bash
+   ./install.sh
+   ```
+
+4. Restart your shell:
+
+   ```bash
+   exec zsh
+   ```
+
+### Basic Usage
+
+The environment provides several enhanced commands:
+
+- `ll`, `la`: Enhanced file listing with `eza`
+- `cat`: Syntax-highlighted file viewing with `bat`
+- `find`: Improved file finding with `fd`
+- `grep`: Better text search with `ripgrep`
+- `z`: Smart directory jumping with `zoxide`
+
+## Working with Tools
+
+### Modern CLI Tools
+
+#### File Navigation
 
 ```bash
-./install.sh
+# List files with Git status
+ll
+
+# Show directory tree
+lt
+
+# Find files by name
+fd pattern
+
+# Search file contents
+rg "search pattern"
 ```
 
-This will:
-
-1. Install Oh My Zsh and Powerlevel10k if not already installed
-2. Configure zsh with essential plugins
-3. Set up the Bioinformatics micromamba environment
-4. Configure tool integrations
-5. Set up job monitoring
-
-### Configuration Overview
-
-Key configuration files:
-
-- `~/.zshrc` - Main shell configuration
-- `~/.p10k.zsh` - Powerlevel10k theme configuration
-- `~/.nanorc` - Nano editor configuration
-- `~/.tmux.conf` - Tmux configuration
-
-### Tool Usage
-
-#### Micromamba Environment
-
-Activate/deactivate the bioinformatics environment:
+#### System Monitoring
 
 ```bash
+# Show system resources
+htop
+
+# Monitor specific process
+htop -p $(pgrep process_name)
+```
+
+### Package Management
+
+#### Micromamba Usage
+
+```bash
+# Activate environment
 micromamba activate bioinf
-micromamba deactivate
+
+# Install package
+micromamba install -c bioconda new-package
+
+# List installed packages
+micromamba list
 ```
 
-#### SLURM Job Management
+## Job Management
 
-Monitor your SLURM jobs:
+### SLURM Integration
+
+#### Monitoring Jobs
 
 ```bash
-sj            # View your running jobs
-sj -a         # View all jobs
-sj -m         # View all your jobs
-sj <job_id>   # View specific job with details
+# Show your jobs
+sj
+
+# Show all system jobs
+sj -a
+
+# Show specific job details
+sj <job_id>
 ```
 
-Create a job template:
+#### Interactive Sessions
 
 ```bash
-create_job myjob 4 16 24  # Name, cores, memory(GB), time(hours)
+# 1 core, 8GB RAM session
+srun1
+
+# 8 cores, 32GB RAM session
+srun8
 ```
 
-#### Azure OpenAI Integration
+### Workflow Monitoring
 
-To configure and use Azure OpenAI:
+#### Snakemake Workflows
 
 ```bash
-llm-setup     # Configure your Azure OpenAI deployment
-llm "What is the BLAST algorithm?"  # Ask the LLM a question
+# Monitor workflow
+snakemonitor -l snakemake.log
+
+# Enable notifications
+snakemonitor -n
 ```
 
-#### Cross-System Synchronization
-
-Sync your configuration to other systems:
+#### Nextflow Pipelines
 
 ```bash
-./sync.sh workstation1 cluster-login  # Sync to specific hosts
-./sync.sh --all                       # Sync to all configured hosts
+# Monitor current workflow
+nextflow-monitor
+
+# Monitor specific workflow
+nextflow-monitor -r run_name
 ```
 
-## Customization
+## Configuration Management
 
-For customization options, see [CUSTOMIZATION.md](CUSTOMIZATION.md).
+### Shell Customization
 
-## Troubleshooting
+Edit these files for customization:
 
-For common issues and their solutions, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+- `~/.zshrc`: Main shell configuration
+- `~/.p10k.zsh`: Prompt customization
+- `~/.zsh_work`: Work-specific settings
+
+### Color Schemes
+
+Select and customize color schemes:
+
+```bash
+# Launch palette selector
+select_palette
+
+# Save current scheme
+select_palette --save custom
+```
+
+## Cross-System Sync
+
+### Managing Hosts
+
+```bash
+# Add new host
+./sync.sh add-host nickname user@host.example.com
+
+# List configured hosts
+./sync.sh list-hosts
+```
+
+### Syncing Configuration
+
+```bash
+# Push to host
+./sync.sh push hostname
+
+# Pull from host
+./sync.sh pull hostname
+
+# Sync to all hosts
+./sync.sh --all
+```
+
+## Best Practices
+
+1. Keep configurations in sync across systems
+2. Use job monitoring for long-running tasks
+3. Regularly update tools and packages
+4. Back up custom configurations
+5. Use version control for scripts
+
+## Getting Help
+
+- Check the troubleshooting guide: `docs/TROUBLESHOOTING.md`
+- Review common customizations: `docs/CUSTOMIZATION.md`
+- For job monitoring help: `docs/JOB_MONITORING.md`
+- Docker usage guide: `docs/DOCKER.md`

@@ -1,48 +1,69 @@
-# CI/CD Setup
+# CI/CD Guide
 
-This project uses GitHub Actions for continuous integration and testing on multiple platforms.
+This guide explains the Continuous Integration and Continuous Delivery (CI/CD)
+setup for the bioinformatics CLI environment.
 
-## Workflow Overview
+## Overview
 
-The CI workflow automatically tests the installation, configuration, and uninstallation processes on both Ubuntu 24.04 and macOS. This ensures compatibility across different operating systems and helps catch issues before they reach users.
+The CI/CD pipeline automatically tests the environment setup on multiple platforms
+to ensure compatibility and reliability. It runs on every push to the main branch
+and for pull requests.
 
-### What's Being Tested
+## Pipeline Steps
 
-1. **Installation Process**: The workflow tests the non-interactive installation using a predefined configuration.
-2. **Configuration Files**: Verifies that essential configuration files are correctly placed.
-3. **Tool Installation**: Checks that key tools like `eza` and `bat` are available after installation.
-4. **Uninstallation Process**: Tests that the uninstallation script works correctly.
+1. **Environment Setup**
+   - Ubuntu 24.04 and macOS environments
+   - Installation of system dependencies
+   - Configuration preparation
 
-## Configuration
+2. **Installation Testing**
+   - Full installation in non-interactive mode
+   - Modern CLI tools verification
+   - Shell configuration testing
+   - Job monitoring setup validation
 
-The CI workflow uses a special configuration file located at `.github/workflows/ci-config.ini`, which is configured for non-interactive installation with sensible defaults.
+3. **Docker Build**
+   - Container image building
+   - Environment validation inside container
+   - Configuration testing
+   - Tool availability verification
 
-## Running Tests Locally
+## Testing Matrix
 
-You can replicate the CI testing environment locally:
+| Platform | Shell | Package Manager |
+|----------|-------|----------------|
+| Ubuntu   | zsh   | apt            |
+| macOS    | zsh   | brew           |
+
+## Docker Testing
+
+The Docker testing process includes:
+
+1. Building the container image
+2. Verifying tool installations
+3. Testing shell configurations
+4. Validating job monitoring
+5. Checking cross-platform compatibility
+
+## Local Pipeline Testing
+
+To test the CI/CD pipeline locally:
 
 ```bash
-# For Ubuntu-like systems
-./install.sh --non-interactive --config .github/workflows/ci-config.ini
+# Install act (GitHub Actions runner)
+brew install act
 
-# Test functionality
-# ...then uninstall
-./uninstall.sh --non-interactive
+# Run the full pipeline
+act -P ubuntu-latest=ubuntu:24.04
+
+# Run specific job
+act -j test-ubuntu
 ```
 
-## Extending the Tests
+## Status Badges
 
-To add new tests to the CI workflow:
+Include these badges in your fork's README:
 
-1. Edit the `.github/workflows/ci.yml` file
-2. Add new steps under the appropriate job section
-3. Ensure any new tests work on both Ubuntu and macOS platforms
-
-## Troubleshooting CI Issues
-
-If the CI workflow fails:
-
-1. Check the GitHub Actions logs for specific error messages
-2. Try to reproduce the issue locally using the CI configuration
-3. Make necessary adjustments to the code or configuration
-4. Push changes to trigger a new CI run
+```markdown
+![CI](https://github.com/username/bioinf-cli-env/actions/workflows/ci.yml/badge.svg)
+```

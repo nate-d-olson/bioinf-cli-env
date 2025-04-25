@@ -99,23 +99,23 @@ You can test customizations by modifying the Docker image:
 
 1. Create a new `Dockerfile.custom`:
 
-```dockerfile
-FROM bioinf-cli-env
+   ```dockerfile
+   FROM bioinf-cli-env
 
-USER biouser
-WORKDIR /home/biouser
+   USER biouser
+   WORKDIR /home/biouser
 
-# Add your custom configurations
-COPY --chown=biouser:biouser custom_config.zsh /home/biouser/.custom_config.zsh
-RUN echo "source ~/.custom_config.zsh" >> ~/.zshrc
-```
+   # Add your custom configurations
+   COPY --chown=biouser:biouser custom_config.zsh /home/biouser/.custom_config.zsh
+   RUN echo "source ~/.custom_config.zsh" >> ~/.zshrc
+   ```
 
-2. Build and run your custom image:
+1. Build and run your custom image:
 
-```bash
-docker build -t bioinf-cli-env-custom -f Dockerfile.custom .
-docker run -it bioinf-cli-env-custom
-```
+   ```bash
+   docker build -t bioinf-cli-env-custom -f Dockerfile.custom .
+   docker run -it bioinf-cli-env-custom
+   ```
 
 ## Troubleshooting Docker Issues
 
@@ -129,10 +129,11 @@ docker run -it bioinf-cli-env /bin/bash
 
 ### Permission issues with mounted volumes
 
-If you encounter permission issues with mounted volumes, you can adjust the user ID:
+If you encounter permission issues with mounted volumes, adjust the user ID:
 
 ```bash
-docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) -t bioinf-cli-env .
+docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) \
+    -t bioinf-cli-env .
 ```
 
 ### Networking issues
@@ -145,13 +146,14 @@ docker run -it --network=host bioinf-cli-env
 
 ## Using Docker for CI/CD
 
-This Docker image can be used for continuous integration testing. Example GitHub Actions workflow:
+This Docker image can be used for continuous integration testing. Example GitHub
+Actions workflow:
 
 ```yaml
 jobs:
   test:
     runs-on: ubuntu-latest
-    container:
+    container: 
       image: bioinf-cli-env:latest
     steps:
       - name: Test micromamba
@@ -168,22 +170,22 @@ To extend the Docker image for specific bioinformatics workflows:
 
 1. Create a new Dockerfile:
 
-```dockerfile
-FROM bioinf-cli-env
+   ```dockerfile
+   FROM bioinf-cli-env
 
-USER root
-RUN apt-get update && apt-get install -y \
-    additional-package1 \
-    additional-package2 \
-    && rm -rf /var/lib/apt/lists/*
+   USER root
+   RUN apt-get update && apt-get install -y \
+       additional-package1 \
+       additional-package2 \
+       && rm -rf /var/lib/apt/lists/*
 
-USER biouser
-RUN micromamba install -n base -c bioconda \
-    additional-bioconda-package
-```
+   USER biouser
+   RUN micromamba install -n base -c bioconda \
+       additional-bioconda-package
+   ```
 
-2. Build your extended image:
+1. Build your extended image:
 
-```bash
-docker build -t my-bioinf-workflow -f Dockerfile.extended .
-```
+   ```bash
+   docker build -t my-bioinf-workflow -f Dockerfile.extended .
+   ```

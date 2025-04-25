@@ -1,148 +1,157 @@
 # Job Monitoring Guide
 
-This document explains how to use the job monitoring tools provided in this environment for tracking SLURM jobs and workflow progress.
+This guide provides detailed information about using the job monitoring tools
+included in the bioinformatics CLI environment.
 
 ## SLURM Job Monitoring
 
-The `sj` command provides enhanced monitoring for SLURM jobs:
+### Enhanced Job Status (`sj`)
+
+The `sj` command provides an enhanced view of your SLURM jobs:
 
 ```bash
-sj             # Show your running jobs
-sj -a          # Show all jobs in the system
-sj -m          # Show all your jobs (running, pending, etc.)
-sj <job_id>    # Show detailed information for a specific job
+# View your jobs
+sj
+
+# View all jobs in the system
+sj -a
+
+# View detailed information for a specific job
+sj <job_id>
 ```
 
-### Job Creation Helper
+### Interactive Sessions
 
-The `create_job` function helps create new job scripts:
+Quick interactive session commands:
 
 ```bash
-create_job <job_name> [cores] [memory_gb] [time_hours]
+# Start a session with 1 core and 8GB RAM
+srun1
+
+# Start a session with 8 cores and 32GB RAM
+srun8
 ```
 
-Example:
+### Job Creation
+
+Create job scripts with standard configurations:
 
 ```bash
-create_job align_genome 8 32 12
+# Create a basic job script
+create_job myjob 4 16 24  # 4 cores, 16GB RAM, 24 hours
+
+# Submit with notifications
+sbatch-notify myjob.sh
 ```
 
-This creates a job script called `align_genome.sh` with:
-
-- 8 CPU cores
-- 32GB of memory
-- 12-hour time limit
-
-### Other SLURM Aliases
-
-```bash
-sq              # Shortcut for squeue -u $USER
-si              # Shortcut for sinfo
-sc              # Shortcut for scancel
-srun1           # Start an interactive session with 1 core, 8GB RAM, 2-hour limit
-srun8           # Start an interactive session with 8 cores, 32GB RAM, 8-hour limit
-```
-
-### Job Resource Usage
-
-Check the resource usage of a running job:
-
-```bash
-job_usage <job_id>
-```
-
-This displays CPU, memory, and other resource statistics.
-
-## Workflow Engine Monitoring
+## Workflow Monitoring
 
 ### Snakemake Monitoring
 
-The `snakemake_monitor.sh` script provides enhanced monitoring for Snakemake workflows:
+Monitor Snakemake workflow progress:
 
 ```bash
-./scripts/workflow_monitors/snakemake_monitor.sh <snakefile> [snakemake_args]
+# Monitor a running workflow
+snakemonitor -l <snakemake.log>
+
+# Enable notifications
+snakemonitor -l <snakemake.log> -n
 ```
-
-This will:
-
-1. Run the Snakemake workflow with the provided arguments
-2. Show real-time rule execution progress
-3. Display resource usage statistics
-4. Estimate completion time
 
 ### Nextflow Monitoring
 
-For Nextflow workflows:
+Track Nextflow pipeline execution:
 
 ```bash
-./scripts/workflow_monitors/nextflow_monitor.sh <nextflow_script> [nextflow_args]
+# Monitor current workflow
+nextflow-monitor
+
+# Monitor specific run
+nextflow-monitor -r <run_name>
 ```
 
-This monitors:
+### WDL/Cromwell Monitoring
 
-- Process execution
-- Resource usage per process
-- Execution timeline
-
-### WDL Monitoring
-
-For Cromwell/WDL workflows:
+Monitor WDL workflow execution:
 
 ```bash
-./scripts/workflow_monitors/wdl_monitor.sh <wdl_file> [cromwell_args]
+# Monitor workflows in default directory
+wdl-monitor
+
+# Monitor specific directory
+wdl-monitor -d /path/to/cromwell/logs
 ```
 
-## Custom Monitoring
+## Resource Monitoring
 
-### Setting Up Job Notifications
+### System Resource Tracking
 
-To receive notifications when jobs complete:
+All monitoring tools track:
 
-1. Edit your ~/.zsh_work file to set notification preferences:
+- CPU usage
+- Memory utilization
+- Disk I/O
+- Network activity
 
-   ```bash
-   # Email notifications (uncomment and customize)
-   # export JOB_NOTIFY_EMAIL="your.email@example.com"
+### Configuration
 
-   # Terminal notifications (if using a local terminal)
-   export JOB_NOTIFY_TERMINAL=true
-   ```
-
-2. Submit jobs using the notification wrapper:
-   ```bash
-   sbatch-notify myjob.sh
-   ```
-
-### Integration with tmux
-
-For long-running jobs, you can monitor them in a dedicated tmux pane:
+Edit `~/.config/bioinf-cli-env/monitoring/monitor.conf`:
 
 ```bash
-# Start monitoring in the current tmux session
+# Update frequency (seconds)
+UPDATE_INTERVAL=10
+
+# Warning thresholds
+MEMORY_WARN=90
+CPU_WARN=95
+
+# Log settings
+LOG_DIR=/path/to/logs
+LOG_RETENTION=7
+```
+
+## Notifications
+
+### Desktop Notifications
+
+Enable desktop notifications with the `-n` flag:
+
+```bash
+snakemonitor -n
+nextflow-monitor -n
+wdl-monitor -n
+```
+
+### Email Notifications
+
+Configure email notifications in your environment:
+
+```bash
+export JOB_NOTIFY_EMAIL="your.email@example.com"
+```
+
+## Advanced Features
+
+### TMux Integration
+
+Monitor jobs in TMux sessions:
+
+```bash
+# Monitor in new pane
 monitor_in_tmux <job_id>
 
-# Or create a new dedicated monitoring session
+# Monitor in new session
 tmux_monitor <job_id>
 ```
 
-## Advanced Monitoring Options
+### Custom Triggers
 
-### Resource Usage Tracking
-
-To track and visualize resource usage over time:
+Set up custom actions on job events in `~/.config/bioinf-cli-env/monitoring/triggers.sh`:
 
 ```bash
-job_history          # Show resource usage of your recent jobs
-job_stats <job_type> # Analyze performance of similar jobs
+on_job_complete() {
+    local job_id="$1"
+    local status="$2"
+    # Your custom actions here
+}
 ```
-
-### Pipeline-Specific Monitors
-
-For specific bioinformatics workflows, use the dedicated monitors:
-
-```bash
-monitor_alignment <ref_genome> <input_files>
-monitor_variant_calling <ref_genome> <bam_files>
-```
-
-These provide domain-specific insights and optimizations.
