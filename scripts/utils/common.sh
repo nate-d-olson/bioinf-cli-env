@@ -293,7 +293,7 @@ backup_config() {  # Renamed from backup_file
     
     if [[ ! -f "$file" ]]; then
         log_warning "File not found for backup: $file"
-        return 1
+        return 0
     fi
     
     mkdir -p "$backup_dir"
