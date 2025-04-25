@@ -9,11 +9,15 @@ A comprehensive command-line environment setup for bioinformatics work, featurin
 - SLURM job management utilities
 - Color palette selector for data visualization
 
+![CI](https://github.com/nate-d-olson/bioinf-cli-env/actions/workflows/ci.yml/badge.svg)
+![Docker](https://img.shields.io/docker/pulls/nate-d-olson/bioinf-cli-env)
+![License](https://img.shields.io/github/license/nate-d-olson/bioinf-cli-env)
+
 ## Quick Start
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/bioinf-cli-env.git
+git clone https://github.com/nate-d-olson/bioinf-cli-env.git
 cd bioinf-cli-env
 
 # Review and customize configuration
