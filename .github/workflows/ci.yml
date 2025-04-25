@@ -46,6 +46,7 @@ jobs:
           test -f ~/.p10k.zsh && echo "Powerlevel10k config present ✓"
   
   test-macos:
+    needs: test-ubuntu
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
