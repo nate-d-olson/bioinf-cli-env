@@ -285,7 +285,7 @@ add_to_path() {
 }
 
 # File operations
-backup_file() {
+backup_config() {  # Renamed from backup_file
     local file=$1
     local backup_dir=${2:-"${HOME}/.local/backup/bioinf-cli-env"}
     local timestamp
