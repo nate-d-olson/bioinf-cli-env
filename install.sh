@@ -3,7 +3,12 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Ensure compatibility with both Bash and Zsh
+if [ -n "${ZSH_VERSION:-}" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 source "$SCRIPT_DIR/scripts/utils/common.sh"
 
 # Check if zsh is installed
@@ -84,13 +89,14 @@ elif [[ ! -f "$CONFIG_INI" && "$INTERACTIVE" == "false" ]]; then
     die "Non-interactive mode requires a config file. Copy config.ini.template to config.ini and customize it."
 fi
 
-# Helper to ask yes/no questions or use config value
+# Update the ask function to work in Zsh
 ask() {
     local prompt="$1"
     local config_key="$2"
 
     if [[ "$INTERACTIVE" == "true" ]]; then
-        read -r -p "$prompt [Y/n] " yn
+        echo -n "$prompt [Y/n] "
+        read -r yn
         [[ "$yn" != [Nn]* ]]
     else
         # Get value from config.ini
@@ -112,7 +118,11 @@ fi
 # Backup existing configs
 log_info "Backing up existing configurations to $BACKUP_DIR"
 for file in .zshrc .p10k.zsh .nanorc .tmux.conf; do
-    backup_config "$HOME/$file" "$BACKUP_DIR"
+    if [[ -f "$HOME/$file" ]]; then
+        backup_config "$HOME/$file" "$BACKUP_DIR"
+    else
+        log_warning "File not found for backup: $HOME/$file"
+    fi
 done
 
 # Export interactive flag for sub-scripts
