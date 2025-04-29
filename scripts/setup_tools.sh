@@ -199,14 +199,16 @@ install_tool() {
         installed=true
     else
         # Try alternative names if provided
-        for alt_name in "${alt_names[@]}"; do
-            if is_package_available "$alt_name" "$installer"; then
-                log_info "Installing $tool via $installer (package: $alt_name)..."
-                install_via_package_manager "$installer" "$alt_name"
-                installed=true
-                break
-            fi
-        done
+        if [[ ${#alt_names[@]} -gt 0 ]]; then
+            for alt_name in "${alt_names[@]}"; do
+                if is_package_available "$alt_name" "$installer"; then
+                    log_info "Installing $tool via $installer (package: $alt_name)..."
+                    install_via_package_manager "$installer" "$alt_name"
+                    installed=true
+                    break
+                fi
+            done
+        fi
     fi
     
     # If still not installed, try to install from GitHub
