@@ -6,20 +6,21 @@ IFS=$'\n\t'
 # Initialize global variables
 INTERACTIVE=true
 CONFIG_FILE=""
-SCRIPT_DIR=""
-CONFIG_INI=""
-CONFIG_DIR=""
-SCRIPTS_DIR=""
+# SCRIPT_DIR=""
+# CONFIG_INI=""
+# CONFIG_DIR=""
+# SCRIPTS_DIR=""
 BIN_DIR="${HOME}/.local/bin"
 BACKUP_DIR="${HOME}/.config/bioinf-cli-env.bak.$(date +%Y%m%d%H%M%S)"
 
 # Function: Initialize paths and environment
 initialize() {
-    if [ -n "${ZSH_VERSION:-}" ]; then
+if [ -n "${ZSH_VERSION:-}" ]; then
         SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
     else
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     fi
+
     CONFIG_INI="$SCRIPT_DIR/config.ini"
     CONFIG_DIR="$SCRIPT_DIR/config"
     SCRIPTS_DIR="$SCRIPT_DIR/scripts"
@@ -138,6 +139,14 @@ install_components() {
         bash "$SCRIPTS_DIR/setup_omz.sh" "$CONFIG_DIR"
     fi
 
+    if ask "Install job monitoring tools?" "INSTALL_JOB_MONITORING"; then
+        bash "$SCRIPTS_DIR/setup_monitoring.sh"
+    fi
+
+    if ask "Install color palette selector?" "INSTALL_PALETTE_SELECTOR"; then
+        install -m0755 "$SCRIPTS_DIR/select_palette.sh" "$BIN_DIR/"
+    fi
+
     if ask "Install micromamba and bioinformatics environment?" "INSTALL_MICROMAMBA"; then
         bash "$SCRIPTS_DIR/setup_micromamba.sh"
         bash "$SCRIPTS_DIR/setup_micromamba.sh" env-create "$CONFIG_DIR/micromamba-config.yaml"
@@ -147,13 +156,6 @@ install_components() {
         bash "$SCRIPTS_DIR/setup_llm.sh"
     fi
 
-    if ask "Install job monitoring tools?" "INSTALL_JOB_MONITORING"; then
-        bash "$SCRIPTS_DIR/setup_monitoring.sh"
-    fi
-
-    if ask "Install color palette selector?" "INSTALL_PALETTE_SELECTOR"; then
-        install -m0755 "$SCRIPTS_DIR/select_palette.sh" "$BIN_DIR/"
-    fi
 }
 
 # Main script execution
