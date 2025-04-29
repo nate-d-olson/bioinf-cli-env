@@ -121,7 +121,7 @@ _wdl_monitor "$@"
 EOF
 
 # Install completions if not already in fpath and running in Zsh
-if [ -n "$ZSH_VERSION" ] && ! grep -q "$CONFIG_DIR" "$HOME/.zshrc"; then
+if [ -n "${ZSH_VERSION:-}" ] && ! grep -q "$CONFIG_DIR" "$HOME/.zshrc"; then
     echo -e "\n# Add job monitoring completions to fpath\nfpath=($CONFIG_DIR \$fpath)" >>"$HOME/.zshrc"
 fi
 
