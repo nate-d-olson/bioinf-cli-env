@@ -560,7 +560,7 @@ brew)
 apt)
     # Ubuntu/Debian packages
     install_tool "bat" "apt" "bat" "batcat"
-    install_tool "ripgrep" "apt" "rg"
+    install_tool "ripgrep" "apt"
     install_tool "fd-find" "apt" "fd"
     install_tool "jq" "apt"
     install_tool "fzf" "apt"
