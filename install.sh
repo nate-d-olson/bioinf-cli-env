@@ -6,6 +6,38 @@ IFS=$'\n\t'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/scripts/utils/common.sh"
 
+# Check if zsh is installed
+if ! command -v zsh &> /dev/null; then
+    log_error "zsh is not installed. Please install zsh first."
+    echo "On Ubuntu/Debian: sudo apt-get install -y zsh"
+    echo "On macOS: brew install zsh"
+    echo "On CentOS/RHEL: sudo yum install -y zsh"
+    exit 1
+fi
+
+# Check if zsh is the default shell
+if [[ "$SHELL" != *"zsh"* ]]; then
+    log_warning "zsh is not your default shell."
+    if [[ "$INTERACTIVE" != "false" ]]; then
+        read -r -p "Would you like to set zsh as your default shell? [Y/n] " yn
+        if [[ "$yn" != [Nn]* ]]; then
+            chsh -s "$(which zsh)" || {
+                log_error "Failed to set zsh as default shell. Please run: chsh -s $(which zsh)"
+                echo "Continue installation? [Y/n] "
+                read -r yn
+                [[ "$yn" == [Nn]* ]] && exit 1
+            }
+        else
+            log_warning "Continuing with current shell. Some features may not work correctly."
+            echo "Continue installation? [Y/n] "
+            read -r yn
+            [[ "$yn" == [Nn]* ]] && exit 1
+        fi
+    else
+        log_warning "Non-interactive mode: zsh is not the default shell. Some features may not work correctly."
+    fi
+fi
+
 # Default paths and configuration
 CONFIG_INI="$SCRIPT_DIR/config.ini"
 CONFIG_DIR="$SCRIPT_DIR/config"

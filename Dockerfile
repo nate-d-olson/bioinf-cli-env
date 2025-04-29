@@ -8,12 +8,12 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 
-# Install system dependencies
+# Install system dependencies with zsh prioritized
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    zsh \
     curl \
     git \
     wget \
-    zsh \
     nano \
     tmux \
     python3 \
@@ -26,6 +26,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libncurses-dev \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
+
+# Set zsh as default shell for root user
+RUN chsh -s /usr/bin/zsh root
 
 # Create and set up non-root user
 ARG USERNAME=biouser
@@ -40,6 +43,9 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
     && rm -rf /var/lib/apt/lists/* \
     && usermod --shell /usr/bin/zsh $USERNAME
+
+# Make sure zsh is the default shell system-wide
+ENV SHELL=/usr/bin/zsh
 
 USER $USERNAME
 WORKDIR /home/$USERNAME/bioinf-cli-env
@@ -63,12 +69,12 @@ RUN mkdir -p /home/$USERNAME/.local/bin \
 RUN ./install.sh --non-interactive --config config.ini
 
 # Set up entrypoint initialization script
-RUN echo '#!/bin/bash' > /home/$USERNAME/entrypoint.sh && \
+RUN echo '#!/bin/zsh' > /home/$USERNAME/entrypoint.sh && \
     echo '# Source zsh config' >> /home/$USERNAME/entrypoint.sh && \
     echo 'source ~/.zshrc' >> /home/$USERNAME/entrypoint.sh && \
     echo '' >> /home/$USERNAME/entrypoint.sh && \
     echo '# Initialize micromamba' >> /home/$USERNAME/entrypoint.sh && \
-    echo "eval \"\$(micromamba shell hook --shell=bash)\"" >> /home/$USERNAME/entrypoint.sh && \
+    echo "eval \"\$(micromamba shell hook --shell=zsh)\"" >> /home/$USERNAME/entrypoint.sh && \
     echo 'micromamba activate base' >> /home/$USERNAME/entrypoint.sh && \
     echo '' >> /home/$USERNAME/entrypoint.sh && \
     echo '# Execute the provided command or start zsh' >> /home/$USERNAME/entrypoint.sh && \
