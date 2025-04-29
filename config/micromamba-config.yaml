@@ -4,17 +4,16 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  # Core bioinformatics tools
+  # Core bioinformatics tools that work across platforms
   - samtools
   - bcftools
   - bedtools
   - bwa
   - minimap2
-  - dipcall
   - seqtk
-  - truvari
   - seqkit
   - csvkit
+  # Platform-specific tools will be added conditionally via the setup script
   # Additional tools can be uncommented as needed
   # - snakemake
   # - nextflow

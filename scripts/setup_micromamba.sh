@@ -74,6 +74,42 @@ install_micromamba() {
     log_success "Micromamba installed to $BIN_DIR/micromamba"
 }
 
+# Install platform-specific packages
+install_platform_specific_packages() {
+    local env_name="$1"
+    local platform=$(detect_platform)
+    local os=$(get_os "$platform")
+    local arch=$(get_arch "$platform")
+
+    log_info "Installing platform-specific packages for $os-$arch..."
+
+    # Skip problematic packages on macOS
+    if [[ "$os" == "darwin" ]]; then
+        log_info "Skipping platform-incompatible packages on macOS"
+        # Optionally install macOS-compatible alternatives here if needed
+    else
+        # Install Linux-specific packages
+        log_info "Installing additional bioinformatics tools for Linux..."
+        if micromamba list -n "$env_name" | grep -q "dipcall"; then
+            log_info "dipcall already installed"
+        else
+            micromamba install -n "$env_name" -c bioconda -c conda-forge -y dipcall || log_warning "Failed to install dipcall, continuing anyway"
+        fi
+        
+        if micromamba list -n "$env_name" | grep -q "truvari"; then
+            log_info "truvari already installed"
+        else
+            micromamba install -n "$env_name" -c bioconda -c conda-forge -y truvari || log_warning "Failed to install truvari, continuing anyway"
+        fi
+    fi
+
+    # Install platform-specific packages for Apple Silicon if needed
+    if [[ "$os" == "darwin" && "$arch" == "arm64" ]]; then
+        log_info "Detected Apple Silicon, applying specific configurations..."
+        # Add Apple Silicon specific configurations or packages if needed
+    fi
+}
+
 # Create a bioinformatics environment from config file
 create_environment() {
     if [[ -z "$CONFIG_FILE" ]]; then
@@ -124,6 +160,9 @@ create_environment() {
         log_info "Creating new environment..."
         micromamba create -y -f "$CONFIG_FILE"
     fi
+    
+    # Install platform-specific packages
+    install_platform_specific_packages "$ENV_NAME"
 
     # Add activation snippet to .zshrc if not already present
     if ! grep -q "# >>> micromamba initialize >>>" "$HOME/.zshrc"; then
