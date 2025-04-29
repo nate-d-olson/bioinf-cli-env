@@ -93,6 +93,21 @@ echo $POWERLEVEL9K_MODE
 # Type a valid command and see if it gets highlighted
 ```
 
+### Testing Workflow Monitoring
+
+Inside the container, test workflow monitoring tools:
+
+```bash
+# Test Snakemake monitor
+bash scripts/workflow_monitors/snakemake_monitor.sh --help
+
+# Test Nextflow monitor
+bash scripts/workflow_monitors/nextflow_monitor.sh --help
+
+# Test WDL monitor
+bash scripts/workflow_monitors/wdl_monitor.sh --help
+```
+
 ## Customization Testing
 
 You can test customizations by modifying the Docker image:

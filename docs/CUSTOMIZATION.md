@@ -179,10 +179,34 @@ Customize monitor behavior in `~/.config/bioinf-cli-env/monitoring/workflow.conf
 snakemake:
   log_pattern: "*.snakemake.log"
   refresh_rate: 5
+  enable_notifications: true
 nextflow:
   work_dir: "work"
   refresh_rate: 10
+  enable_notifications: false
 wdl:
   log_dir: "cromwell-workflow-logs"
   refresh_rate: 15
+  enable_notifications: true
+```
+
+You can also set thresholds for resource usage warnings in `monitor.conf`.
+
+### Job Templates
+
+To create additional templates for common workflows, save them in `~/.local/share/bioinf-cli-env/job_templates/`. For example:
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=genome_assembly
+#SBATCH --nodes=1
+#SBATCH --ntasks=16
+#SBATCH --mem=64G
+#SBATCH --time=48:00:00
+
+# Load required modules
+module load spades/3.15.3
+
+# Run the assembly
+spades.py -o output_dir -1 reads_1.fq -2 reads_2.fq
 ```

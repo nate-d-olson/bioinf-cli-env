@@ -24,8 +24,11 @@ cd bioinf-cli-env
 cp config.ini.template config.ini
 nano config.ini
 
-# Run the installer
+# Run the installer (interactive mode)
 ./install.sh
+
+# For non-interactive installation with a custom config file
+./install.sh --non-interactive --config custom_config.ini
 ```
 
 ## Features

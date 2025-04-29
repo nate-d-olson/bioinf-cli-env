@@ -167,3 +167,57 @@ If you still have issues:
    - Error messages
    - System information
    - Steps to reproduce
+
+### Docker Issues
+
+If you encounter issues with Docker:
+
+1. Verify Docker is installed and running:
+
+   ```bash
+   docker --version
+   systemctl status docker
+   ```
+
+2. Check if the Docker image builds successfully:
+
+   ```bash
+   docker build -t bioinf-cli-env .
+   ```
+
+3. Test running the container:
+
+   ```bash
+   docker run -it bioinf-cli-env
+   ```
+
+4. If volume mounting fails, ensure the path exists and has correct permissions:
+
+   ```bash
+   docker run -it -v /path/to/data:/home/biouser/data bioinf-cli-env
+   ```
+
+### Debugging Job Monitoring
+
+If job monitoring tools fail:
+
+1. Enable debug mode for detailed logs:
+
+   ```bash
+   bash scripts/workflow_monitors/snakemake_monitor.sh --debug test.log
+   ```
+
+2. Check the state files in `~/.local/state/bioinf-cli-env/monitors` for errors.
+
+3. Verify the required commands are available:
+
+   ```bash
+   command -v squeue
+   command -v sacct
+   ```
+
+4. Test individual monitoring scripts manually:
+
+   ```bash
+   bash scripts/workflow_monitors/nextflow_monitor.sh --help
+   ```

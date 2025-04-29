@@ -21,10 +21,16 @@ environment effectively.
    nano config.ini
    ```
 
-3. Run the installer:
+3. Run the installer (interactive mode):
 
    ```bash
    ./install.sh
+   ```
+
+   For non-interactive installation with a custom configuration file:
+
+   ```bash
+   ./install.sh --non-interactive --config custom_config.ini
    ```
 
 4. Restart your shell:
@@ -137,6 +143,19 @@ nextflow-monitor
 nextflow-monitor -r run_name
 ```
 
+#### WDL/Cromwell Workflows
+
+```bash
+# Monitor workflows in the default directory
+wdl-monitor
+
+# Monitor workflows in a specific directory
+wdl-monitor -d /path/to/cromwell/logs
+
+# Enable notifications
+wdl-monitor -n
+```
+
 ## Configuration Management
 
 ### Shell Customization
@@ -183,6 +202,18 @@ select_palette --save custom
 # Sync to all hosts
 ./sync.sh --all
 ```
+
+#### Selective Sync
+
+To exclude specific files or directories from synchronization, create a `.syncignore` file in your home directory:
+
+```text
+.aws/credentials
+.ssh/
+.vscode/
+```
+
+This ensures sensitive or unnecessary files are not synced.
 
 ## Best Practices
 

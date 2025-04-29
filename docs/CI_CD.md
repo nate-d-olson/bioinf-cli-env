@@ -67,3 +67,35 @@ Include these badges in your fork's README:
 ```markdown
 ![CI](https://github.com/username/bioinf-cli-env/actions/workflows/ci.yml/badge.svg)
 ```
+
+## Debugging CI/CD Failures
+
+If a CI/CD job fails:
+
+1. Review the logs in the GitHub Actions interface.
+2. Re-run the job with debug logging enabled:
+
+   ```yaml
+   jobs:
+     test:
+       steps:
+         - name: Enable debug logging
+           run: |
+             export ACTIONS_STEP_DEBUG=true
+   ```
+
+3. Test the failing step locally using `act`:
+
+   ```bash
+   act -j <job-name>
+   ```
+
+4. Verify the environment setup matches the pipeline configuration.
+
+## Customizing the Pipeline
+
+To customize the pipeline for specific workflows:
+
+1. Modify the `ci.yml` file to include additional steps or jobs.
+2. Add environment variables or secrets as needed in the GitHub repository settings.
+3. Test changes locally using `act` before pushing to the repository.
