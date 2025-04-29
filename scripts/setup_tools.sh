@@ -174,6 +174,11 @@ is_package_available() {
         return 1
         ;;
     brew)
+        # Check if the formula exists in brew
+        if brew info "$package" &>/dev/null; then
+            return 0
+        fi
+        # Secondary check using search (less reliable)
         if brew search "$package" 2>/dev/null | grep -q -i "^$package\$"; then
             return 0
         fi
@@ -331,6 +336,51 @@ install_from_github() {
     local arch=$(get_arch "$platform")
     
     case "$tool" in
+    bat)
+        # Map architecture and OS for bat releases
+        local arch_name
+        local os_name
+        
+        if [[ "$arch" == "amd64" ]]; then
+            arch_name="x86_64"
+        elif [[ "$arch" == "arm64" ]]; then
+            arch_name="aarch64"
+        else
+            arch_name="$arch"
+        fi
+        
+        if [[ "$os" == "darwin" ]]; then
+            os_name="apple-darwin"
+        else
+            os_name="unknown-linux-gnu"
+        fi
+        
+        # Try to get the latest release URL with proper platform detection
+        local url=$(get_latest_release_url "sharkdp/bat" "$os_name" "$arch_name")
+        
+        # If that fails, try a direct download of a known version
+        if [[ -z "$url" ]]; then
+            if [[ "$os" == "darwin" ]]; then
+                if [[ "$arch_name" == "x86_64" ]]; then
+                    url="https://github.com/sharkdp/bat/releases/download/v0.24.0/bat-v0.24.0-x86_64-apple-darwin.tar.gz"
+                elif [[ "$arch_name" == "aarch64" ]]; then
+                    url="https://github.com/sharkdp/bat/releases/download/v0.24.0/bat-v0.24.0-aarch64-apple-darwin.tar.gz"
+                fi
+            else  # Linux
+                if [[ "$arch_name" == "x86_64" ]]; then
+                    url="https://github.com/sharkdp/bat/releases/download/v0.24.0/bat-v0.24.0-x86_64-unknown-linux-gnu.tar.gz"
+                elif [[ "$arch_name" == "aarch64" ]]; then
+                    url="https://github.com/sharkdp/bat/releases/download/v0.24.0/bat-v0.24.0-aarch64-unknown-linux-gnu.tar.gz"
+                fi
+            fi
+        fi
+        
+        if [[ -n "$url" ]]; then
+            install_binary "bat" "$url" "$BIN_DIR/bat" "bat*/bat"
+        else
+            log_error "Failed to install bat."
+        fi
+        ;;
     eza)
         # Map architecture to eza terms
         local arch_name
