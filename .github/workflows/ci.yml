@@ -37,6 +37,7 @@ jobs:
         
       - name: Verify installation
         run: |
+          zsh -c '
           source ~/.zshrc || true
           # Check that key components are installed
           command -v zsh && echo "zsh installed ✓"
@@ -51,6 +52,7 @@ jobs:
           command -v zoxide && echo "zoxide installed ✓"
           test -d ~/.oh-my-zsh && echo "Oh My Zsh installed ✓"
           test -f ~/.p10k.zsh && echo "Powerlevel10k config present ✓"
+          '
   
   test-macos:
     needs: test-ubuntu
@@ -81,6 +83,7 @@ jobs:
         
       - name: Verify installation
         run: |
+          zsh -c '
           source ~/.zshrc || true
           # Check that key components are installed
           command -v zsh && echo "zsh installed ✓"
@@ -95,3 +98,4 @@ jobs:
           command -v zoxide && echo "zoxide installed ✓"
           test -d ~/.oh-my-zsh && echo "Oh My Zsh installed ✓"
           test -f ~/.p10k.zsh && echo "Powerlevel10k config present ✓"
+          '
