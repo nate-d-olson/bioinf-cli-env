@@ -117,7 +117,7 @@ echo "timestamp,pid,command,progress_pct,read_count,mapped_reads,memory_usage_mb
 echo "Starting alignment monitoring with ${INTERVAL}s intervals..."
 echo "Press Ctrl+C to stop monitoring."
 
-START_TIME=$(date +%s)
+start_time=$(date +%s)
 HAS_PROCESS=false
 
 while true; do

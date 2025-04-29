@@ -510,6 +510,31 @@ install_from_github() {
             fi
         fi
         ;;
+    jq)
+        # Now try direct URLs
+        if [[ -z "$url" ]]; then
+            JQ_URL=""
+            if [[ "$os" == "linux" ]]; then
+                if [[ "$arch" == "amd64" ]]; then
+                    JQ_URL="https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-amd64"
+                elif [[ "$arch" == "arm64" ]]; then
+                    JQ_URL="https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-arm64"
+                fi
+            elif [[ "$os" == "darwin" ]]; then
+                if [[ "$arch" == "amd64" ]]; then
+                    JQ_URL="https://github.com/jqlang/jq/releases/download/jq-1.7/jq-macos-amd64"
+                elif [[ "$arch" == "arm64" ]]; then
+                    JQ_URL="https://github.com/jqlang/jq/releases/download/jq-1.7/jq-macos-arm64"
+                fi
+            fi
+            
+            if [[ -n "$JQ_URL" ]]; then
+                install_binary "jq" "$JQ_URL" "$BIN_DIR/jq"
+            else
+                log_error "Failed to install jq."
+            fi
+        fi
+        ;;
     *)
         log_error "Don't know how to install $tool from GitHub."
         return 1
@@ -610,7 +635,7 @@ yum)
     # Try to install jq
     if ! command -v jq &>/dev/null; then
         log_info "Installing jq..."
-        local JQ_URL=""
+        JQ_URL=""
         if [[ "$(uname -m)" == "x86_64" ]]; then
             JQ_URL="https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64"
         elif [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then

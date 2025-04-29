@@ -74,6 +74,8 @@ list_hosts() {
 
     log_info "Configured hosts:"
     grep -v "^#" "$HOSTS_FILE" | grep -v "^$" | while read -r line; do
+        # Fixed SC2155 by separating declaration and assignment
+        local nickname
         nickname=$(echo "$line" | awk '{print $1}')
         host=$(echo "$line" | awk '{print $2}')
         log_info "  $nickname → $host"
@@ -105,7 +107,7 @@ sync_to_remote() {
     for file in "${CONFIG_FILES[@]}"; do
         if [[ -f "$HOME/$file" ]]; then
             log_info "  → Backing up and syncing $file to $host"
-            ssh "$host" "if [[ -f \"$HOME/$file\" ]]; then mkdir -p \"$(dirname \"$backup_dir/$file\")\"; cp \"$HOME/$file\" \"$backup_dir/$file\"; fi"
+            ssh "$host" "if [[ -f \"$HOME/$file\" ]]; then mkdir -p \"\$(dirname \\\"$backup_dir/$file\\\")\"; cp \"$HOME/$file\" \"$backup_dir/$file\"; fi"
             scp "$HOME/$file" "$host:$HOME/"
         fi
     done
@@ -113,7 +115,8 @@ sync_to_remote() {
     # Sync script directories
     for dir in "${SCRIPT_DIRS[@]}"; do
         if [[ -d "$dir" ]]; then
-            local dirname=$(basename "$dir")
+            local dirname
+            dirname=$(basename "$dir")
             log_info "  → Syncing directory $dirname to $host"
 
             # Create target directory on remote host
@@ -170,7 +173,8 @@ sync_from_remote() {
     # Sync script directories
     for dir in "${SCRIPT_DIRS[@]}"; do
         if ssh "$host" "[[ -d \"$dir\" ]]"; then
-            local dirname=$(basename "$dir")
+            local dirname
+            dirname=$(basename "$dir")
             log_info "  → Syncing directory $dirname from $host"
 
             # Create local directory
@@ -230,7 +234,9 @@ sync_all() {
     while read -r line; do
         # Skip comments and empty lines
         [[ "$line" =~ ^# || -z "$line" ]] && continue
-        local nickname=$(echo "$line" | awk '{print $1}')
+        # Fixed SC2155 by separating declaration and assignment
+        local nickname
+        nickname=$(echo "$line" | awk '{print $1}')
         hosts+=("$nickname")
     done <"$HOSTS_FILE"
 

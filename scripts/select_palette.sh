@@ -166,10 +166,19 @@ select_palette() {
         echo ""
     fi
 
-    read -p "Select a palette (1-5): " choice
-
+    # Print the menu
+    echo "Choose a color palette:"
+    echo "1) Gruvbox Dark (default)"
+    echo "2) Solarized Dark"
+    echo "3) Nord"
+    echo "4) Dracula"
+    echo "5) Monokai Pro"
+    
+    # Get user selection
+    read -r -p "Select a palette (1-5): " choice
+    
     case "$choice" in
-    1)
+    1|"")
         apply_palette "gruvbox-dark"
         ;;
     2)
@@ -182,17 +191,17 @@ select_palette() {
         apply_palette "dracula"
         ;;
     5)
-        apply_palette "default"
+        apply_palette "monokai-pro"
         ;;
     *)
-        echo "Invalid selection. Exiting."
-        exit 1
+        echo "Invalid selection. Using default (Gruvbox Dark)."
+        apply_palette "gruvbox-dark"
         ;;
     esac
 
     # Ask about auto-sync
     echo "Would you like to automatically apply this palette in new terminal sessions?"
-    read -p "Enable auto-sync? (y/n): " sync_choice
+    read -r -p "Enable auto-sync? (y/n): " sync_choice
 
     if [[ "$sync_choice" == "y" || "$sync_choice" == "Y" ]]; then
         # Check if palette loading is already in zshrc

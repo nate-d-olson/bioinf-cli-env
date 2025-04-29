@@ -3,6 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../utils/monitor_common.sh
 source "$SCRIPT_DIR/utils/monitor_common.sh"
 
 # Default configuration
@@ -33,123 +34,175 @@ while [[ $# -gt 0 ]]; do
         echo
         echo "Options:"
         echo "  -i, --interval SECONDS   Update interval (default: 10)"
-        echo "  -w, --work DIR          Work directory (default: work)"
-        echo "  -r, --run NAME          Run name for log file"
-        echo "  -n, --notify            Enable desktop notifications"
-        echo "  -h, --help              Show this help message"
+        echo "  -w, --work DIR           Work directory (default: work)"
+        echo "  -r, --run NAME           Run name"
+        echo "  -n, --notify             Enable desktop notifications"
+        echo "  -h, --help               Show this help message"
         exit 0
         ;;
     *)
-        die "Unknown option: $1"
+        echo "Error: Unknown option $1"
+        echo "Run '$(basename "$0") --help' for usage"
+        exit 1
         ;;
     esac
 done
 
-# Find the .nextflow.log file
-LOG_FILE=".nextflow.log${RUN_NAME:+.$RUN_NAME}"
-if [[ ! -f "$LOG_FILE" ]]; then
-    die "Nextflow log file not found: $LOG_FILE"
+# Check if work directory exists
+if [[ ! -d "$WORK_DIR" ]]; then
+    log_error "Work directory not found: $WORK_DIR"
+    echo "Create the work directory or specify a different one with -w option"
+    exit 1
 fi
 
-# Monitor state
-declare -A process_states
-start_time=$(date +%s)
-
-log_info "Monitoring Nextflow run: $LOG_FILE (refreshing every ${UPDATE_INTERVAL}s)"
+# Main monitoring loop
+log_info "Starting Nextflow workflow monitor..."
+log_info "Monitoring work directory: $WORK_DIR"
+log_info "Update interval: ${UPDATE_INTERVAL}s"
 log_info "Press Ctrl+C to exit"
 
-parse_trace_file() {
-    local trace_file="$1"
-    local fields=()
-    local values=()
-
-    # Read header line
-    IFS=$'\t' read -r -a fields <"$trace_file"
-
-    # Read last line for values
-    while IFS=$'\t' read -r line; do
-        IFS=$'\t' read -r -a values <<<"$line"
-    done <"$trace_file"
-
-    # Create associative array of field->value
-    local result=""
-    for i in "${!fields[@]}"; do
-        [[ $i -lt ${#values[@]} ]] && result+="${fields[$i]}=${values[$i]}\n"
-    done
-    echo -e "$result"
-}
-
-monitor_nextflow() {
-    local submitted=0
-    local completed=0
-    local failed=0
-    local cached=0
-
-    # Parse log file for process status
-    submitted=$(grep -c "Submitted process" "$LOG_FILE" 2>/dev/null || echo 0)
-    cached=$(grep -c "Cached process" "$LOG_FILE" 2>/dev/null || echo 0)
-    completed=$((cached + $(grep -c "Completed process" "$LOG_FILE" 2>/dev/null || echo 0)))
-    failed=$(grep -c "\[E\]" "$LOG_FILE" 2>/dev/null || echo 0)
-
-    # Calculate running processes
-    local running=$((submitted - completed - failed))
-    running=$((running < 0 ? 0 : running))
-
-    # Display status
-    setup_display
-
-    echo "=== Nextflow Status ==="
-    echo "Last updated: $(format_timestamp)"
-    echo
-    echo "Runtime: $(calculate_duration "$start_time")"
-    echo
-    if ((submitted > 0)); then
-        show_progress "$completed" "$submitted"
-        echo
-        echo "Process Summary:"
-        echo "  Total:     $submitted"
-        echo "  Running:   $running"
-        echo "  Completed: $completed"
-        echo "  Cached:    $cached"
-        echo "  Failed:    $failed"
-        echo
-
-        # Show recent completions
-        echo "Recent Process Completions:"
-        grep -E "Cached process|Completed process" "$LOG_FILE" | tail -n 5
-        echo
-
-        # Show resource usage if available
-        if [[ -d "$WORK_DIR" ]]; then
-            echo "Resource Usage (recent processes):"
-            while IFS= read -r trace_file; do
-                echo "Process: $(dirname "$trace_file" | xargs basename)"
-                parse_trace_file "$trace_file" | grep -E "duration|cpu|memory|disk"
-                echo
-            done < <(find "$WORK_DIR" -name ".command.trace" -type f -mmin -5 | head -n 3)
-        fi
-
-        # Show any recent errors
-        if ((failed > 0)); then
-            echo "Recent Errors:"
-            grep -A 2 "ERROR" "$LOG_FILE" | tail -n 6
-        fi
-    else
-        echo "No processes submitted yet. Waiting for workflow to start..."
-    fi
-
-    # Save monitoring state
-    save_monitor_state "nextflow" \
-        "submitted=$submitted" \
-        "completed=$completed" \
-        "failed=$failed" \
-        "last_update=$(date +%s)"
-}
-
-# Main monitoring loop
-trap 'echo; log_info "Monitoring stopped."; exit 0' INT
+start_time=$(date +%s)
 
 while true; do
-    monitor_nextflow
+    # Clear screen and show header
+    setup_display
+    echo "⚙️  Nextflow Workflow Monitor"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Work directory: $WORK_DIR"
+    
+    # Display run name if specified
+    if [[ -n "$RUN_NAME" ]]; then
+        echo "Run name: $RUN_NAME"
+    fi
+    
+    # Get current time and calculate elapsed time
+    current_time=$(date +%s)
+    elapsed=$((current_time - start_time))
+    elapsed_formatted=$(printf "%02d:%02d:%02d" $((elapsed/3600)) $(((elapsed%3600)/60)) $((elapsed%60)))
+    
+    echo "Elapsed time: $elapsed_formatted"
+    echo
+
+    # Look for .command.log files to determine active processes
+    active_processes=$(find "$WORK_DIR" -name ".command.log" -mmin -2 | wc -l)
+    
+    # Find total number of processes by counting all .command.log files
+    total_processes=$(find "$WORK_DIR" -name ".command.log" | wc -l)
+    
+    # Find completed processes by counting .exitcode files with value 0
+    completed_processes=$(find "$WORK_DIR" -name ".exitcode" -exec cat {} \; 2>/dev/null | grep -c "^0$" || echo 0)
+    
+    # Find failed processes by counting .exitcode files with non-zero value
+    failed_processes=$(find "$WORK_DIR" -name ".exitcode" -exec cat {} \; 2>/dev/null | grep -c -v "^0$" || echo 0)
+    
+    # Calculate progress percentage
+    if [[ "$total_processes" -gt 0 ]]; then
+        progress_pct=$((completed_processes * 100 / total_processes))
+    else
+        progress_pct=0
+    fi
+    
+    # Find most recent process start
+    recent_start=$(find "$WORK_DIR" -name ".command.log" -type f -printf "%T@ %p\n" 2>/dev/null | sort -n | tail -n 1 | cut -d ' ' -f 2 || echo "")
+    
+    if [[ -n "$recent_start" ]]; then
+        recent_process=$(basename "$(dirname "$recent_start")")
+        echo "Most recent process: $recent_process"
+    fi
+    
+    # Display summary
+    echo "Status Summary:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Total processes:   $total_processes"
+    echo "Active processes:  $active_processes"
+    echo "Completed:         $completed_processes"
+    echo "Failed:            $failed_processes"
+    echo "Progress:          ${progress_pct}%"
+    echo
+    
+    # Create a progress bar
+    progress_bar="["
+    bar_width=50
+    filled_width=$((bar_width * progress_pct / 100))
+    
+    for ((i = 0; i < filled_width; i++)); do
+        progress_bar+="#"
+    done
+    
+    for ((i = filled_width; i < bar_width; i++)); do
+        progress_bar+="-"
+    done
+    
+    progress_bar+="] ${progress_pct}%"
+    echo "$progress_bar"
+    echo
+    
+    # Find and display recent log output
+    echo "Recent Log Output:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    # Find 5 most recently modified log files
+    recent_logs=$(find "$WORK_DIR" -name ".command.log" -type f -printf "%T@ %p\n" 2>/dev/null | sort -nr | head -n 5 | cut -d ' ' -f 2 || echo "")
+    
+    if [[ -n "$recent_logs" ]]; then
+        for log in $recent_logs; do
+            process_dir=$(basename "$(dirname "$log")")
+            echo "Process: $process_dir"
+            echo "----------------------------------------"
+            tail -n 5 "$log"
+            echo
+        done
+    else
+        echo "No log files found"
+    fi
+    
+    # Check for completion
+    if [[ "$active_processes" -eq 0 && "$total_processes" -gt 0 && "$completed_processes" -ge "$total_processes" ]]; then
+        echo "✅ Workflow appears to be complete!"
+        
+        if [[ "$ENABLE_NOTIFICATIONS" == "true" ]]; then
+            send_notification "Nextflow Workflow Complete" "Your workflow has finished running."
+        fi
+    fi
+    
+    # If there are failed processes, notify the user
+    if [[ "$failed_processes" -gt 0 && "$ENABLE_NOTIFICATIONS" == "true" ]]; then
+        send_notification "Nextflow Workflow Error" "Your workflow has encountered errors ($failed_processes failed tasks)." "critical"
+    fi
+    
+    # Display system resource usage if available
+    if command -v free &>/dev/null || command -v top &>/dev/null; then
+        echo
+        echo "System Resource Usage:"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        
+        # Memory usage
+        if command -v free &>/dev/null; then
+            # Linux
+            free -h | grep -E "Mem|total" | head -n 2
+        elif command -v vm_stat &>/dev/null; then
+            # macOS
+            echo "Memory:"
+            vm_stat | grep "Pages free:" | awk '{ print "Free:      " $3 * 4 / 1024 " MB" }'
+            vm_stat | grep "Pages active:" | awk '{ print "Active:    " $3 * 4 / 1024 " MB" }'
+            vm_stat | grep "Pages inactive:" | awk '{ print "Inactive:  " $3 * 4 / 1024 " MB" }'
+            vm_stat | grep "Pages wired down:" | awk '{ print "Wired:     " $4 * 4 / 1024 " MB" }'
+        fi
+        
+        # CPU usage
+        if command -v top &>/dev/null; then
+            echo
+            echo "CPU Load:"
+            if [[ "$(uname)" == "Darwin" ]]; then
+                # macOS
+                top -l 1 | grep -E "^CPU usage" | head -n 1
+            else
+                # Linux
+                top -bn1 | grep "Cpu(s)" | head -n 1
+            fi
+        fi
+    fi
+    
+    # Wait for the next update
     sleep "$UPDATE_INTERVAL"
 done

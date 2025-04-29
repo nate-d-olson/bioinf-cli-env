@@ -16,8 +16,8 @@ if ! cmd_exists zsh; then
     os=$(get_os "$platform")
 
     # Try to install zsh if we're running interactively
+    sudo_cmd=""
     if [[ "${INTERACTIVE:-true}" == "true" ]]; then
-        local sudo_cmd=""
         log_info "Attempting to install zsh automatically..."
         
         case "$os" in

@@ -92,7 +92,7 @@ get_latest_release_version() {
 
     response=$(curl -s "https://api.github.com/repos/${repo}/releases/latest")
 
-    if [[ $? -ne 0 ]]; then
+    if ! [ -n "$response" ]; then
         log_error "Failed to fetch latest version for ${repo}"
         return 1
     fi

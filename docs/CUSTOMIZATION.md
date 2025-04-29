@@ -192,9 +192,10 @@ wdl:
 
 You can also set thresholds for resource usage warnings in `monitor.conf`.
 
-### Job Templates
+### Custom Job Templates
 
-To create additional templates for common workflows, save them in `~/.local/share/bioinf-cli-env/job_templates/`. For example:
+To create additional templates for common workflows, save them in 
+`~/.local/share/bioinf-cli-env/job_templates/`. For example:
 
 ```bash
 #!/bin/bash

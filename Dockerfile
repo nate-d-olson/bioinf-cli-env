@@ -5,8 +5,8 @@ FROM ubuntu:24.04
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Set non-interactive installation and prevent prompts
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Etc/UTC
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC
 
 # Install system dependencies with zsh prioritized
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -69,21 +69,21 @@ RUN mkdir -p /home/$USERNAME/.local/bin \
 RUN ./install.sh --non-interactive --config config.ini
 
 # Set up entrypoint initialization script
-RUN echo '#!/bin/zsh' > /home/$USERNAME/entrypoint.sh && \
-    echo '# Source zsh config' >> /home/$USERNAME/entrypoint.sh && \
-    echo 'source ~/.zshrc' >> /home/$USERNAME/entrypoint.sh && \
-    echo '' >> /home/$USERNAME/entrypoint.sh && \
-    echo '# Initialize micromamba' >> /home/$USERNAME/entrypoint.sh && \
-    echo "eval \"\$(micromamba shell hook --shell=zsh)\"" >> /home/$USERNAME/entrypoint.sh && \
-    echo 'micromamba activate base' >> /home/$USERNAME/entrypoint.sh && \
-    echo '' >> /home/$USERNAME/entrypoint.sh && \
-    echo '# Execute the provided command or start zsh' >> /home/$USERNAME/entrypoint.sh && \
-    echo 'if [ $# -eq 0 ]; then' >> /home/$USERNAME/entrypoint.sh && \
-    echo '    exec zsh' >> /home/$USERNAME/entrypoint.sh && \
-    echo 'else' >> /home/$USERNAME/entrypoint.sh && \
-    echo '    exec "$@"' >> /home/$USERNAME/entrypoint.sh && \
-    echo 'fi' >> /home/$USERNAME/entrypoint.sh && \
-    chmod +x /home/$USERNAME/entrypoint.sh
+RUN echo '#!/bin/zsh' > /home/$USERNAME/entrypoint.sh \
+    && echo '# Source zsh config' >> /home/$USERNAME/entrypoint.sh \
+    && echo 'source ~/.zshrc' >> /home/$USERNAME/entrypoint.sh \
+    && echo '' >> /home/$USERNAME/entrypoint.sh \
+    && echo '# Initialize micromamba' >> /home/$USERNAME/entrypoint.sh \
+    && echo "eval \"\$(micromamba shell hook --shell=zsh)\"" >> /home/$USERNAME/entrypoint.sh \
+    && echo 'micromamba activate base' >> /home/$USERNAME/entrypoint.sh \
+    && echo '' >> /home/$USERNAME/entrypoint.sh \
+    && echo '# Execute the provided command or start zsh' >> /home/$USERNAME/entrypoint.sh \
+    && echo 'if [ $# -eq 0 ]; then' >> /home/$USERNAME/entrypoint.sh \
+    && echo '    exec zsh' >> /home/$USERNAME/entrypoint.sh \
+    && echo 'else' >> /home/$USERNAME/entrypoint.sh \
+    && echo '    exec "$@"' >> /home/$USERNAME/entrypoint.sh \
+    && echo 'fi' >> /home/$USERNAME/entrypoint.sh \
+    && chmod +x /home/$USERNAME/entrypoint.sh
 
 # Set final working directory and entrypoint
 WORKDIR /home/$USERNAME

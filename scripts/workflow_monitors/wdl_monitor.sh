@@ -3,6 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../utils/monitor_common.sh
 source "$SCRIPT_DIR/utils/monitor_common.sh"
 
 # Default configuration
@@ -28,138 +29,174 @@ while [[ $# -gt 0 ]]; do
         echo
         echo "Options:"
         echo "  -i, --interval SECONDS   Update interval (default: 10)"
-        echo "  -d, --dir DIR           Log directory (default: cromwell-workflow-logs)"
-        echo "  -n, --notify            Enable desktop notifications"
-        echo "  -h, --help              Show this help message"
+        echo "  -d, --dir DIR            Log directory (default: cromwell-workflow-logs)"
+        echo "  -n, --notify             Enable desktop notifications"
+        echo "  -h, --help               Show this help message"
         exit 0
         ;;
     *)
-        die "Unknown option: $1"
+        echo "Error: Unknown option $1"
+        echo "Run '$(basename "$0") --help' for usage"
+        exit 1
         ;;
     esac
 done
 
-# Verify log directory exists
+# Check if log directory exists
 if [[ ! -d "$LOG_DIR" ]]; then
-    die "Log directory not found: $LOG_DIR"
+    log_error "Log directory not found: $LOG_DIR"
+    echo "Create the log directory or specify a different one with -d option"
+    exit 1
 fi
 
-# Monitor state
-declare -A workflow_states
-start_time=$(date +%s)
-
-log_info "Monitoring WDL workflows in: $LOG_DIR (refreshing every ${UPDATE_INTERVAL}s)"
+# Main monitoring loop
+log_info "Starting WDL/Cromwell workflow monitor..."
+log_info "Monitoring log directory: $LOG_DIR"
+log_info "Update interval: ${UPDATE_INTERVAL}s"
 log_info "Press Ctrl+C to exit"
 
-monitor_wdl() {
-    local total=0
-    local running=0
-    local completed=0
-    local failed=0
-
-    # Find and parse all workflow logs
-    while IFS= read -r log_file; do
-        if [[ ! -f "$log_file" ]]; then
-            continue
-        fi
-
-        local workflow_id=$(basename "$log_file" .log)
-        ((total++))
-
-        # Parse log file for workflow status
-        if grep -q "workflow finished with status 'Succeeded'" "$log_file"; then
-            workflow_states["$workflow_id"]="completed"
-            ((completed++))
-        elif grep -q "workflow failed" "$log_file"; then
-            workflow_states["$workflow_id"]="failed"
-            ((failed++))
-            # Send notification on failure
-            if [[ "${workflow_states["$workflow_id"]:-}" != "notified" ]]; then
-                send_notification "WDL Workflow Failed" "Workflow $workflow_id failed"
-                workflow_states["$workflow_id"]="notified"
-            fi
-        else
-            workflow_states["$workflow_id"]="running"
-            ((running++))
-        fi
-    done < <(find "$LOG_DIR" -name "*.log" -type f)
-
-    # Display status
-    setup_display
-
-    echo "=== WDL/Cromwell Status ==="
-    echo "Last updated: $(format_timestamp)"
-    echo
-    echo "Runtime: $(calculate_duration "$start_time")"
-    echo
-    show_progress "$completed" "$total"
-    echo
-    echo "Workflow Summary:"
-    echo "  Total:     $total"
-    echo "  Running:   $running"
-    echo "  Completed: $completed"
-    echo "  Failed:    $failed"
-    echo
-
-    # Show recent workflow completions
-    echo "Recent Workflow Completions:"
-    find "$LOG_DIR" -name "*.log" -type f -mmin -30 | while read -r log; do
-        workflow_id=$(basename "$log" .log)
-        status="${workflow_states[$workflow_id]}"
-        if [[ "$status" == "completed" ]]; then
-            echo "✓ $workflow_id ($(calculate_duration "$(stat -f %m "$log")"))"
-        fi
-    done
-    echo
-
-    # Show resource usage for running workflows
-    if ((running > 0)); then
-        echo "Running Workflows Resource Usage:"
-        for workflow_id in "${!workflow_states[@]}"; do
-            if [[ "${workflow_states[$workflow_id]}" == "running" ]]; then
-                local log_file="$LOG_DIR/$workflow_id.log"
-                if [[ -f "$log_file" ]]; then
-                    echo "Workflow: $workflow_id"
-                    # Extract memory usage if available
-                    local mem_usage
-                    mem_usage=$(grep "Memory" "$log_file" | tail -n1 | grep -o '[0-9]\+' || echo "0")
-                    if ((mem_usage > 0)); then
-                        echo "  Memory: $(format_memory "$mem_usage")"
-                    fi
-                    echo "  Runtime: $(calculate_duration "$(stat -f %m "$log_file")")"
-                    echo
-                fi
-            fi
-        done
-    fi
-
-    # Show recent errors
-    if ((failed > 0)); then
-        echo "Recent Errors:"
-        for workflow_id in "${!workflow_states[@]}"; do
-            if [[ "${workflow_states[$workflow_id]}" == "failed" ]]; then
-                local log_file="$LOG_DIR/$workflow_id.log"
-                if [[ -f "$log_file" ]]; then
-                    echo "Workflow: $workflow_id"
-                    grep -A 2 "workflow failed" "$log_file" | tail -n 3
-                    echo
-                fi
-            fi
-        done
-    fi
-
-    # Save monitoring state
-    save_monitor_state "wdl" \
-        "total=$total" \
-        "completed=$completed" \
-        "failed=$failed" \
-        "last_update=$(date +%s)"
-}
-
-# Main monitoring loop
-trap 'echo; log_info "Monitoring stopped."; exit 0' INT
+start_time=$(date +%s)
 
 while true; do
-    monitor_wdl
+    # Clear screen and show header
+    setup_display
+    echo "🧬 WDL/Cromwell Workflow Monitor"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Log directory: $LOG_DIR"
+    
+    # Get current time and calculate elapsed time
+    current_time=$(date +%s)
+    elapsed=$((current_time - start_time))
+    elapsed_formatted=$(printf "%02d:%02d:%02d" $((elapsed/3600)) $(((elapsed%3600)/60)) $((elapsed%60)))
+    
+    echo "Elapsed time: $elapsed_formatted"
+    echo
+
+    # Find all workflow logs
+    workflow_logs=$(find "$LOG_DIR" -name "*.log" -type f 2>/dev/null || echo "")
+    
+    if [[ -z "$workflow_logs" ]]; then
+        echo "No workflow logs found in $LOG_DIR"
+        sleep "$UPDATE_INTERVAL"
+        continue
+    fi
+    
+    # Find the most recent workflow log
+    latest_log=$(find "$LOG_DIR" -name "*.log" -type f -printf "%T@ %p\n" 2>/dev/null | sort -nr | head -n 1 | cut -d ' ' -f 2 || echo "")
+    
+    if [[ -z "$latest_log" ]]; then
+        echo "No workflow logs found in $LOG_DIR"
+        sleep "$UPDATE_INTERVAL"
+        continue
+    fi
+    
+    # Get workflow ID from log filename
+    local workflow_id
+    workflow_id=$(basename "$latest_log" .log)
+    echo "Latest workflow ID: $workflow_id"
+    
+    # Count started, running, and completed jobs
+    started=$(grep -c "starting" "$latest_log" || echo 0)
+    completed=$(grep -c "done" "$latest_log" || echo 0)
+    failed=$(grep -c "failed" "$latest_log" || echo 0)
+    
+    # Display active workflow status
+    echo
+    echo "Workflow Status Summary:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Started tasks:    $started"
+    echo "Completed tasks:  $completed"
+    echo "Failed tasks:     $failed"
+    
+    # Calculate progress if we have any started tasks
+    if [[ "$started" -gt 0 ]]; then
+        progress_pct=$((completed * 100 / started))
+        echo "Progress:         ${progress_pct}%"
+        
+        # Create a progress bar
+        echo
+        progress_bar="["
+        bar_width=50
+        filled_width=$((bar_width * progress_pct / 100))
+        
+        for ((i = 0; i < filled_width; i++)); do
+            progress_bar+="#"
+        done
+        
+        for ((i = filled_width; i < bar_width; i++)); do
+            progress_bar+="-"
+        done
+        
+        progress_bar+="] ${progress_pct}%"
+        echo "$progress_bar"
+    fi
+    
+    # Display recent log entries
+    echo
+    echo "Recent Log Entries:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    tail -n 20 "$latest_log" | grep -v "^\[" | head -n 10
+    
+    # Check if workflow is complete
+    workflow_complete=$(grep -c "Workflow .*complete" "$latest_log" || echo 0)
+    
+    if [[ "$workflow_complete" -gt 0 ]]; then
+        echo
+        echo "✅ Workflow appears to be complete!"
+        
+        if [[ "$ENABLE_NOTIFICATIONS" == "true" ]]; then
+            send_notification "WDL Workflow Complete" "Your workflow has finished running."
+        fi
+    fi
+    
+    # If there are failed tasks, notify the user
+    if [[ "$failed" -gt 0 && "$ENABLE_NOTIFICATIONS" == "true" ]]; then
+        send_notification "WDL Workflow Error" "Your workflow has encountered errors ($failed failed tasks)." "critical"
+    fi
+    
+    # Display active tasks
+    active_tasks=$(grep "starting" "$latest_log" | grep -v "done\|failed" | tail -n 5 || echo "")
+    
+    if [[ -n "$active_tasks" ]]; then
+        echo
+        echo "Recently Started Tasks:"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "$active_tasks"
+    fi
+    
+    # Display system resource usage if available
+    if command -v free &>/dev/null || command -v top &>/dev/null; then
+        echo
+        echo "System Resource Usage:"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        
+        # Memory usage
+        if command -v free &>/dev/null; then
+            # Linux
+            free -h | grep -E "Mem|total" | head -n 2
+        elif command -v vm_stat &>/dev/null; then
+            # macOS
+            echo "Memory:"
+            vm_stat | grep "Pages free:" | awk '{ print "Free:      " $3 * 4 / 1024 " MB" }'
+            vm_stat | grep "Pages active:" | awk '{ print "Active:    " $3 * 4 / 1024 " MB" }'
+            vm_stat | grep "Pages inactive:" | awk '{ print "Inactive:  " $3 * 4 / 1024 " MB" }'
+            vm_stat | grep "Pages wired down:" | awk '{ print "Wired:     " $4 * 4 / 1024 " MB" }'
+        fi
+        
+        # CPU usage
+        if command -v top &>/dev/null; then
+            echo
+            echo "CPU Load:"
+            if [[ "$(uname)" == "Darwin" ]]; then
+                # macOS
+                top -l 1 | grep -E "^CPU usage" | head -n 1
+            else
+                # Linux
+                top -bn1 | grep "Cpu(s)" | head -n 1
+            fi
+        fi
+    fi
+    
+    # Wait for the next update
     sleep "$UPDATE_INTERVAL"
 done

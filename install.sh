@@ -63,8 +63,8 @@ validate_prerequisites() {
         if [[ "$INTERACTIVE" != "false" ]]; then
             read -r -p "Would you like to set zsh as your default shell? [Y/n] " yn
             if [[ "$yn" != [Nn]* ]]; then
-                chsh -s "$(which zsh)" || {
-                    log_error "Failed to set zsh as default shell. Please run: chsh -s $(which zsh)"
+                chsh -s "$(command -v zsh)" || {
+                    log_error "Failed to set zsh as default shell. Please run: chsh -s $(command -v zsh)"
                     echo "Continue installation? [Y/n] "
                     read -r yn
                     [[ "$yn" == [Nn]* ]] && exit 1
@@ -167,5 +167,5 @@ install_components
 
 log_success "Installation complete! Please restart your terminal."
 if [[ "$SHELL" != *"zsh"* ]]; then
-    log_warning "Your current shell is not zsh. Run 'chsh -s $(which zsh)' to change it."
+    log_warning "Your current shell is not zsh. Run 'chsh -s $(command -v zsh)' to change it."
 fi

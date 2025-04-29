@@ -12,11 +12,13 @@ and for pull requests.
 ## Pipeline Steps
 
 1. **Environment Setup**
+
    - Ubuntu 24.04 and macOS environments
    - Installation of system dependencies
    - Configuration preparation
 
 2. **Installation Testing**
+
    - Full installation in non-interactive mode
    - Modern CLI tools verification
    - Shell configuration testing
@@ -31,9 +33,9 @@ and for pull requests.
 ## Testing Matrix
 
 | Platform | Shell | Package Manager |
-|----------|-------|----------------|
-| Ubuntu   | zsh   | apt            |
-| macOS    | zsh   | brew           |
+| -------- | ----- | --------------- |
+| Ubuntu   | zsh   | apt             |
+| macOS    | zsh   | brew            |
 
 ## Docker Testing
 

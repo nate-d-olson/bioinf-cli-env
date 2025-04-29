@@ -135,8 +135,11 @@ job_usage() {
     fi
 
     # Get job info
-    local job_info=$(scontrol show job "$job_id" -o)
-    local job_state=$(echo "$job_info" | grep -oP "JobState=\K\w+")
+    local job_info
+    job_info=$(scontrol show job "$job_id" -o)
+    
+    local job_state
+    job_state=$(echo "$job_info" | grep -oP "JobState=\K\w+")
 
     if [[ "$job_state" != "RUNNING" ]]; then
         echo "⚠️  Job $job_id is not running (Status: $job_state)"
@@ -301,10 +304,10 @@ job_stats() {
     echo "📊 Statistics for jobs of type '$job_type':"
 
     # Get stats for jobs with the given name pattern
-    sacct -u "$USER" --starttime=$(date -d "30 days ago" +%Y-%m-%d) --format=JobID,JobName,State,Elapsed,MaxRSS,CPUTime -j $(sacct -u "$USER" --starttime=$(date -d "30 days ago" +%Y-%m-%d) --format=JobID,JobName -n | grep "$job_type" | awk '{print $1}' | tr '\n' ',')
+    sacct -u "$USER" --starttime="$(date -d "30 days ago" +%Y-%m-%d)" --format=JobID,JobName,State,Elapsed,MaxRSS,CPUTime -j "$(sacct -u "$USER" --starttime="$(date -d "30 days ago" +%Y-%m-%d)" --format=JobID,JobName -n | grep "$job_type" | awk '{print $1}' | tr '\n' ',')"
 
     echo -e "\n📈 Average resource usage:"
-    sacct -u "$USER" --starttime=$(date -d "30 days ago" +%Y-%m-%d) --format=Elapsed,MaxRSS,CPUTime -n -j $(sacct -u "$USER" --starttime=$(date -d "30 days ago" +%Y-%m-%d) --format=JobID,JobName -n | grep "$job_type" | awk '{print $1}' | tr '\n' ',') |
+    sacct -u "$USER" --starttime="$(date -d "30 days ago" +%Y-%m-%d)" --format=Elapsed,MaxRSS,CPUTime -n -j "$(sacct -u "$USER" --starttime="$(date -d "30 days ago" +%Y-%m-%d)" --format=JobID,JobName -n | grep "$job_type" | awk '{print $1}' | tr '\n' ',')" |
         awk 'BEGIN {count=0; time=0; rss=0} 
             {count++; split($1,t,":"); time+=(t[1]*3600+t[2]*60+t[3]); rss+=$2} 
             END {if (count>0) printf "  Jobs: %d, Avg time: %.2f hours, Avg memory: %.2f GB\n", count, time/count/3600, rss/count/1024/1024}'

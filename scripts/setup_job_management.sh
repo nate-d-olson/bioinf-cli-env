@@ -247,7 +247,7 @@ elif $SHOW_MINE_ALL; then
   
   echo ""
   echo "Recently completed jobs (last 24 hours):"
-  sacct -u "$USER" --starttime=$(date -d "1 day ago" +%Y-%m-%dT%H:%M:%S 2>/dev/null || date -v-1d +%Y-%m-%dT%H:%M:%S) \
+  sacct -u "$USER" --starttime="$(date -d "1 day ago" +%Y-%m-%dT%H:%M:%S 2>/dev/null || date -v-1d +%Y-%m-%dT%H:%M:%S)" \
     --format=JobID,JobName,State,Elapsed,Partition,NCPUS,NNodes,ExitCode | grep -v "^JobID" | head -n 10
 else
   echo "👤 Your running jobs:"

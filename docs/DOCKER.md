@@ -168,7 +168,7 @@ Actions workflow:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: 
+    container:
       image: bioinf-cli-env:latest
     steps:
       - name: Test micromamba

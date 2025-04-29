@@ -64,12 +64,14 @@ format_memory() {
 show_progress() {
     local current=$1
     local total=$2
-    local width=50
+    local width=${3:-50}
+    local message=${4:-"Progress"}
+
     local percentage=$((current * 100 / total))
     local filled=$((width * current / total))
     local empty=$((width - filled))
 
-    printf "Progress: ["
+    printf "%s [" "$message"
     printf "%${filled}s" | tr ' ' '='
     printf "%${empty}s" | tr ' ' ' '
     printf "] %d%%\n" "$percentage"
@@ -300,7 +302,7 @@ get_readable_size() {
         ((unit++))
     done
 
-    printf "%.2f %s" $size "${units[$unit]}"
+    printf "%.2f %s" "$size" "${units[$unit]}"
 }
 
 # Check if a command exists and is in path
@@ -323,7 +325,8 @@ start_resource_monitoring() {
 
         while true; do
             # Get timestamp
-            local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+            local timestamp
+            timestamp=$(date +"%Y-%m-%d %H:%M:%S")
 
             # CPU usage
             local cpu_percent=0

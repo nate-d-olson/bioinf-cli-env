@@ -4,6 +4,7 @@ set -euo pipefail
 
 # Source common utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=utils/common.sh
 source "$SCRIPT_DIR/utils/common.sh"
 
 ACTION="${1:-install}"
@@ -23,9 +24,14 @@ install_micromamba() {
     log_info "Installing micromamba..."
 
     # Get platform information
-    local platform=$(detect_platform)
-    local os=$(get_os "$platform")
-    local arch=$(get_arch "$platform")
+    local platform
+    platform=$(detect_platform)
+
+    local os
+    os=$(get_os "$platform")
+
+    local arch
+    arch=$(get_arch "$platform")
 
     log_info "Detected platform: $platform (OS: $os, Arch: $arch)"
 
@@ -77,9 +83,14 @@ install_micromamba() {
 # Install platform-specific packages
 install_platform_specific_packages() {
     local env_name="$1"
-    local platform=$(detect_platform)
-    local os=$(get_os "$platform")
-    local arch=$(get_arch "$platform")
+    local platform
+    platform=$(detect_platform)
+
+    local os
+    os=$(get_os "$platform")
+
+    local arch
+    arch=$(get_arch "$platform")
 
     log_info "Installing platform-specific packages for $os-$arch..."
 

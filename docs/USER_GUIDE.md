@@ -205,7 +205,8 @@ select_palette --save custom
 
 #### Selective Sync
 
-To exclude specific files or directories from synchronization, create a `.syncignore` file in your home directory:
+To exclude specific files or directories from synchronization, create a `.syncignore` file in your 
+home directory:
 
 ```text
 .aws/credentials
