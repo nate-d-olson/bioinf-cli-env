@@ -102,6 +102,11 @@ is_package_available() {
     
     case "$INSTALLER" in
     apt)
+        # Special case for fd-find package on Debian/Ubuntu
+        if [[ "$package" == "fd-find" ]]; then
+            apt-cache search --names-only "^fd-find$" 2>/dev/null | grep -q "fd-find" && return 0
+        fi
+        
         apt-cache search --names-only "^$package$" 2>/dev/null | grep -q -i "$package" || \
         apt-cache search --names-only "$package" 2>/dev/null | grep -q -i "$package"
         ;;
@@ -132,6 +137,11 @@ install_package() {
         ;;
     apt)
         log_info "Installing $package via apt..."
+        
+        # Handle special cases for package names that differ from the command
+        if [[ "$package" == "fd" ]]; then
+            package="fd-find"
+        fi
         
         # Check if we can use sudo non-interactively
         local sudo_cmd="sudo"
@@ -294,11 +304,14 @@ TOOLS=(
     ["bat"]="bat --version|batcat is an alternative"
     ["eza"]="eza --version|exa is an alternative|https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-musl.tar.gz"
     ["ripgrep"]="rg --version"
-    ["fd"]="fd --version|fdfind is an alternative"
+    ["fd"]="fd --version|fd-find|https://github.com/sharkdp/fd/releases/download/v8.7.0/fd-v8.7.0-x86_64-unknown-linux-musl.tar.gz"
     ["jq"]="jq --version|https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-amd64"
     ["fzf"]="fzf --version"
     ["htop"]="htop --version | head -n 1"
     ["tmux"]="tmux -V"
+    ["delta"]="delta --version|https://github.com/dandavison/delta/releases/download/0.16.5/delta-0.16.5-x86_64-unknown-linux-gnu.tar.gz"
+    ["dust"]="dust --version|https://github.com/bootandy/dust/releases/download/v0.8.6/dust-v0.8.6-x86_64-unknown-linux-musl.tar.gz"
+    ["procs"]="procs --version|https://github.com/dalance/procs/releases/download/v0.14.3/procs-v0.14.3-x86_64-linux.zip"
     ["zoxide"]="zoxide --version|https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.2/zoxide-0.9.2-x86_64-unknown-linux-musl.tar.gz"
     ["yq"]="yq --version|https://github.com/mikefarah/yq/releases/download/v4.35.1/yq_linux_amd64"
 )
