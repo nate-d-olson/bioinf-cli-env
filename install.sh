@@ -6,16 +6,15 @@ IFS=$'\n\t'
 # Initialize global variables
 INTERACTIVE=true
 CONFIG_FILE=""
-# SCRIPT_DIR=""
-# CONFIG_INI=""
-# CONFIG_DIR=""
-# SCRIPTS_DIR=""
+# Initialize arrays that will be used by common.sh
+declare -a TEMP_FILES=()
+declare -a TEMP_DIRS=()
 BIN_DIR="${HOME}/.local/bin"
 BACKUP_DIR="${HOME}/.config/bioinf-cli-env.bak.$(date +%Y%m%d%H%M%S)"
 
 # Function: Initialize paths and environment
 initialize() {
-if [ -n "${ZSH_VERSION:-}" ]; then
+    if [ -n "${ZSH_VERSION:-}" ]; then
         SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
     else
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
