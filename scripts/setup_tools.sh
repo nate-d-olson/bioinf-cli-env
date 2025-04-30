@@ -119,6 +119,15 @@ is_package_available() {
     esac
 }
 
+# Function to check if package is available via snap
+is_snap_available() {
+    local package="$1"
+    if ! command -v snap &>/dev/null; then
+        return 1
+    fi
+    snap info "$package" &>/dev/null
+}
+
 # Function to install via package manager
 install_package() {
     local package="$1"
@@ -185,6 +194,30 @@ install_package() {
         return 1
         ;;
     esac
+}
+
+# Function to install via snap
+install_snap_package() {
+    local package="$1"
+    log_info "Installing $package via snap..."
+    
+    # Check if we can use sudo non-interactively
+    local sudo_cmd="sudo"
+    if [[ "$NONINTERACTIVE" == "true" ]]; then
+        if ! sudo -n true 2>/dev/null; then
+            log_warning "No sudo access available in non-interactive mode for snap install."
+            return 1
+        fi
+    fi
+    
+    if $sudo_cmd snap install "$package"; then
+        local version=$($sudo_cmd snap list "$package" | awk 'NR>1 {print $2}')
+        record_version "$package" "$version (via snap)"
+        return 0
+    else
+        log_error "Failed to install $package via snap"
+        return 1
+    fi
 }
 
 # Function to install binary from URL
@@ -267,8 +300,13 @@ install_tool() {
     
     # Skip apt package manager for tools that don't have apt packages
     if [[ "$INSTALLER" == "apt" && "$tool" == "dust" ]]; then
-        if [[ -n "$github_url" ]]; then
-            log_info "$tool not available via apt, installing from GitHub..."
+        # Try snap installation for dust first
+        if is_snap_available "$tool"; then
+            log_info "$tool not available via apt, trying snap installation..."
+            install_snap_package "$tool"
+            return $?
+        elif [[ -n "$github_url" ]]; then
+            log_info "$tool not available via apt or snap, installing from GitHub..."
             install_binary "$tool" "$github_url"
             return $?
         fi
@@ -290,6 +328,12 @@ install_tool() {
         return $?
     fi
     
+    # Try snap installation if available
+    if is_snap_available "$tool"; then
+        install_snap_package "$tool"
+        return $?
+    fi
+
     # Try GitHub installation if URL provided
     if [[ -n "$github_url" ]]; then
         log_info "$tool not available via $INSTALLER, installing from GitHub..."
