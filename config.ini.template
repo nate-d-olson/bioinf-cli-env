@@ -7,63 +7,31 @@ INSTALL_OH_MY_ZSH=true
 INSTALL_MODERN_TOOLS=true
 INSTALL_MICROMAMBA=true
 INSTALL_AZURE_LLM=false
-INSTALL_JOB_MONITORING=false
+INSTALL_JOB_MONITORING=true
 INSTALL_PALETTE_SELECTOR=true
 
-# Platform and installer preferences
-# Leave empty to auto-detect, or override with: brew, apt, yum, user-space
-PREFERRED_INSTALLER=""
-
-# Micromamba configuration
-MICROMAMBA_ROOT="$HOME/micromamba"
-
 # Path configuration
-BIN_DIR="$HOME/.local/bin"
-CONFIG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config"
+BIN_DIR="${HOME}/.local/bin"
+MICROMAMBA_ROOT="${HOME}/micromamba"
 
-# Bioinformatics tools to include in environment
-# These are handled by the micromamba-config.yaml file, but you can override specific versions here
-# Example: BIOPYTHON_VERSION="1.80"
+# Platform detection override (optional)
+# Uncomment if automatic detection doesn't work correctly
+# OS_OVERRIDE="linux" # Options: linux, darwin
+# ARCH_OVERRIDE="amd64" # Options: amd64, arm64
 
-# Bioinformatics CLI Environment Configuration
-# Copy this file to config.ini and customize as needed
+# Package manager override (optional)
+# Uncomment to force a specific package manager
+# PACKAGE_MANAGER="apt" # Options: apt, brew, yum
 
-[paths]
-# Installation directories
-bin_dir={{BIN_DIR}}
-config_dir={{CONFIG_DIR}}
-micromamba_root={{MICROMAMBA_ROOT}}
+# CI/CD specific configuration 
+# Setting this to true will print more verbose output for debugging CI/CD pipelines
+VERBOSE_OUTPUT=true
 
-[components]
-# Enable/disable components (true/false)
-install_omz=true
-install_modern_tools=true
-install_micromamba=true
-install_llm=false
-install_monitoring=true
-install_palette=true
+# Micromamba environment configuration
+MICROMAMBA_ENV_NAME="bioinf"
+MICROMAMBA_CHANNELS="conda-forge,bioconda,defaults"
+# Comma-separated list of additional packages to install with micromamba
+MICROMAMBA_ADDITIONAL_PACKAGES="biopython=1.80,samtools,fastp,minimap2"
 
-[micromamba]
-# Micromamba configuration
-env_name=bioinf
-channels=conda-forge,bioconda,defaults
-# Comma-separated list of additional packages to install
-additional_packages=
-
-[monitoring]
-# Job monitoring configuration
-update_interval=10
-log_retention_days=7
-enable_notifications=false
-
-[llm]
-# Azure OpenAI configuration
-deployment_name=
-subscription_key=
-endpoint=
-
-[theme]
-# Terminal theme configuration
-theme_name=dark
-enable_powerline=true
-enable_icons=true
+# Set to true to exit on first error, false to continue installation if a component fails
+EXIT_ON_ERROR=false

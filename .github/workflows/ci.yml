@@ -1,101 +1,63 @@
-name: CI
+name: CI/CD Testing
 
 on:
   push:
-    branches: [main, master]
+    branches: [ main ]
   pull_request:
-    branches: [main, master]
-  workflow_dispatch: # Allow manual triggering
+    branches: [ main ]
 
 jobs:
   test-ubuntu:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install and configure zsh
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y zsh
-          sudo chsh -s $(which zsh) $(whoami)
-          echo "SHELL=$(which zsh)" >> $GITHUB_ENV
-
-      - name: Setup CI config
-        run: |
-          cp config.ini.template config.ini
-          # Configure for non-interactive installation
-          sed -i 's/INSTALL_MICROMAMBA=.*/INSTALL_MICROMAMBA=true/' config.ini
-          sed -i 's/INSTALL_OMZ=.*/INSTALL_OMZ=true/' config.ini
-          sed -i 's/INSTALL_TOOLS=.*/INSTALL_TOOLS=true/' config.ini
-          sed -i 's/INSTALL_JOB_MONITORING=.*/INSTALL_JOB_MONITORING=false/' config.ini
-          cat config.ini
-
-      - name: Run installation script
-        run: |
-          chmod +x install.sh
-          zsh ./install.sh
-
+      - uses: actions/checkout@v3
+      - name: Install zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Copy config template
+        run: cp config.ini.template ci-config.ini
+      - name: Run non-interactive installation
+        run: ./install.sh --non-interactive --config ci-config.ini
       - name: Verify installation
         run: |
-          zsh -c '
-            source ~/.zshrc || true
-            # Check that key components are installed
-            command -v zsh && echo "zsh installed ✓"
-            command -v tmux && echo "tmux installed ✓"
-            command -v git && echo "git installed ✓"
-            command -v aws && echo "awscli installed ✓"
-            command -v docker && echo "docker installed ✓"
-            command -v micromamba && echo "micromamba installed ✓"
-            command -v fzf && echo "fzf installed ✓"
-            command -v bat && echo "bat installed ✓"
-            (command -v eza || command -v exa) && echo "eza/exa installed ✓"
-            command -v zoxide && echo "zoxide installed ✓"
-            test -d ~/.oh-my-zsh && echo "Oh My Zsh installed ✓"
-            test -f ~/.p10k.zsh && echo "Powerlevel10k config present ✓"
-          '
+          zsh -c "source $HOME/.zshrc && command -v bat && command -v micromamba"
+      - name: Test micromamba environment
+        run: |
+          zsh -c "source $HOME/.zshrc && micromamba --version"
+      - name: Verify modern tools
+        run: |
+          zsh -c "source $HOME/.zshrc && eza --version || exa --version"
+          zsh -c "source $HOME/.zshrc && bat --version || batcat --version"
+          zsh -c "source $HOME/.zshrc && rg --version"
 
   test-macos:
-    needs: test-ubuntu
     runs-on: macos-latest
+    needs: test-ubuntu
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install and configure zsh
-        run: |
-          brew install zsh || true  # MacOS already has zsh installed
-          sudo chsh -s $(which zsh) $(whoami)
-          echo "SHELL=$(which zsh)" >> $GITHUB_ENV
-
-      - name: Setup CI config
-        run: |
-          cp config.ini.template config.ini
-          # Configure for non-interactive installation
-          sed -i '' 's/INSTALL_MICROMAMBA=.*/INSTALL_MICROMAMBA=true/' config.ini
-          sed -i '' 's/INSTALL_OMZ=.*/INSTALL_OMZ=true/' config.ini
-          sed -i '' 's/INSTALL_TOOLS=.*/INSTALL_TOOLS=true/' config.ini
-          sed -i '' 's/INSTALL_JOB_MONITORING=.*/INSTALL_JOB_MONITORING=true/' config.ini
-          cat config.ini
-
-      - name: Run installation script
-        run: |
-          chmod +x install.sh
-          ./install.sh
-
+      - uses: actions/checkout@v3
+      - name: Copy config template
+        run: cp config.ini.template ci-config.ini
+      - name: Run non-interactive installation
+        run: ./install.sh --non-interactive --config ci-config.ini
       - name: Verify installation
         run: |
-          zsh -c '
-            source ~/.zshrc || true
-            # Check that key components are installed
-            command -v zsh && echo "zsh installed ✓"
-            command -v tmux && echo "tmux installed ✓"
-            command -v git && echo "git installed ✓"
-            command -v aws && echo "awscli installed ✓"
-            command -v docker && echo "docker installed ✓"
-            command -v micromamba && echo "micromamba installed ✓"
-            command -v fzf && echo "fzf installed ✓"
-            command -v bat && echo "bat installed ✓"
-            (command -v eza || command -v exa) && echo "eza/exa installed ✓"
-            command -v zoxide && echo "zoxide installed ✓"
-            test -d ~/.oh-my-zsh && echo "Oh My Zsh installed ✓"
-            test -f ~/.p10k.zsh && echo "Powerlevel10k config present ✓"
-          '
+          zsh -c "source $HOME/.zshrc && command -v bat && command -v micromamba"
+      - name: Test micromamba environment
+        run: |
+          zsh -c "source $HOME/.zshrc && micromamba --version"
+      - name: Verify modern tools
+        run: |
+          zsh -c "source $HOME/.zshrc && eza --version || exa --version"
+          zsh -c "source $HOME/.zshrc && bat --version"
+          zsh -c "source $HOME/.zshrc && rg --version"
+
+  build-docker:
+    runs-on: ubuntu-latest
+    needs: [test-ubuntu, test-macos]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Docker image
+        run: docker build -t bioinf-cli-env .
+      - name: Test Docker image
+        run: |
+          docker run --rm bioinf-cli-env zsh -c "micromamba --version"
+          docker run --rm bioinf-cli-env zsh -c "bat --version || batcat --version"

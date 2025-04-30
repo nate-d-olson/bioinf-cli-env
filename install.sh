@@ -28,6 +28,16 @@ SCRIPTS_DIR="$SCRIPT_DIR/scripts"
 BIN_DIR="${HOME}/.local/bin"
 BACKUP_DIR="${HOME}/.config/bioinf-cli-env.bak.$(date +%Y%m%d%H%M%S)"
 
+# Default configuration options
+INTERACTIVE_MODE=true
+CONFIG_FILE=""
+INSTALL_OH_MY_ZSH=true
+INSTALL_MODERN_TOOLS=true
+INSTALL_MICROMAMBA=true
+INSTALL_AZURE_LLM=false
+INSTALL_JOB_MONITORING=true
+INSTALL_PALETTE_SELECTOR=true
+
 # Create necessary directories
 mkdir -p "$BIN_DIR" "$BACKUP_DIR"
 
@@ -62,11 +72,68 @@ backup_file() {
     fi
 }
 
+# Parse command-line arguments
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --non-interactive)
+                INTERACTIVE_MODE=false
+                # Set environment variable for component scripts
+                export BIOINF_NON_INTERACTIVE=true
+                shift
+                ;;
+            --config)
+                CONFIG_FILE="$2"
+                shift 2
+                ;;
+            --help)
+                echo "Usage: $0 [options]"
+                echo "Options:"
+                echo "  --non-interactive     Run in non-interactive mode"
+                echo "  --config FILE         Use specified config file"
+                echo "  --help                Show this help message"
+                exit 0
+                ;;
+            *)
+                log_error "Unknown option: $1"
+                echo "Use --help for usage information"
+                exit 1
+                ;;
+        esac
+    done
+
+    # Validate config file if specified
+    if [[ -n "$CONFIG_FILE" ]]; then
+        if [[ ! -f "$CONFIG_FILE" ]]; then
+            die "Config file not found: $CONFIG_FILE" 1
+        fi
+    fi
+}
+
+# Load configuration from file
+load_config() {
+    if [[ -n "$CONFIG_FILE" ]]; then
+        log_info "Loading configuration from $CONFIG_FILE"
+        # Source the config file to get variables
+        source "$CONFIG_FILE"
+    fi
+}
+
 # Function to prompt user - shell-agnostic implementation
 prompt() {
     local question="$1"
     local default="${2:-Y}"
     local response=""
+    
+    # Skip prompting in non-interactive mode
+    if [[ "$INTERACTIVE_MODE" == "false" ]]; then
+        # Default to true for components that default to Y
+        if [[ "$default" == "Y" ]]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
     
     if [[ "$default" == "Y" ]]; then
         if [ -n "${ZSH_VERSION:-}" ]; then
@@ -223,6 +290,12 @@ backup_configurations() {
 ########################
 
 main() {
+    # Parse command-line arguments
+    parse_args "$@"
+    
+    # Load configuration if specified
+    load_config
+
     # Print welcome banner
     echo -e "\n${GREEN}┌────────────────────────────────────────────┐${NC}"
     echo -e "${GREEN}│ Bioinformatics CLI Environment Installer    │${NC}"
@@ -234,28 +307,28 @@ main() {
     # Backup existing configurations
     backup_configurations
     
-    # Install components based on user selection
-    if prompt "Install modern CLI tools (eza, bat, ripgrep, etc)?"; then
+    # Install components based on user selection or configuration
+    if [[ "$INSTALL_MODERN_TOOLS" == "true" ]] || prompt "Install modern CLI tools (eza, bat, ripgrep, etc)?"; then
         install_cli_tools
     fi
     
-    if prompt "Install Oh My Zsh and Powerlevel10k?"; then
+    if [[ "$INSTALL_OH_MY_ZSH" == "true" ]] || prompt "Install Oh My Zsh and Powerlevel10k?"; then
         install_omz
     fi
     
-    if prompt "Install job monitoring tools?"; then
+    if [[ "$INSTALL_JOB_MONITORING" == "true" ]] || prompt "Install job monitoring tools?"; then
         install_job_monitoring
     fi
     
-    if prompt "Install color palette selector?"; then
+    if [[ "$INSTALL_PALETTE_SELECTOR" == "true" ]] || prompt "Install color palette selector?"; then
         install_palette_selector
     fi
     
-    if prompt "Install micromamba and bioinformatics environment?"; then
+    if [[ "$INSTALL_MICROMAMBA" == "true" ]] || prompt "Install micromamba and bioinformatics environment?"; then
         install_micromamba
     fi
     
-    if prompt "Install Azure OpenAI CLI integration?"; then
+    if [[ "$INSTALL_AZURE_LLM" == "true" ]] || prompt "Install Azure OpenAI CLI integration?"; then
         install_azure_llm
     fi
     

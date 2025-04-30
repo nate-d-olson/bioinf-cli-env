@@ -16,6 +16,13 @@ NC='\033[0m' # No Color
 # Get the config directory from arguments or use default
 CONFIG_DIR="${1:-$(pwd)/config}"
 
+# Check if running in non-interactive mode
+NONINTERACTIVE=false
+if [[ -n "${BIOINF_NON_INTERACTIVE:-}" ]]; then
+    NONINTERACTIVE=true
+    log_info "Running in non-interactive mode"
+fi
+
 # Helper functions
 log_error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 log_warning() { echo -e "${YELLOW}[WARN]${NC} $*" >&2; }
@@ -146,7 +153,14 @@ if [[ ! -d "$HOME/.fzf" ]]; then
     
     if command_exists git; then
         git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME/.fzf"
-        "$HOME/.fzf/install" --all --no-update-rc
+        
+        # Use non-interactive installation in CI/CD environments
+        if [[ "$NONINTERACTIVE" == "true" ]]; then
+            log_info "Running fzf installation in non-interactive mode"
+            "$HOME/.fzf/install" --all --no-update-rc --key-bindings --completion --no-bash --no-fish
+        else
+            "$HOME/.fzf/install" --all --no-update-rc
+        fi
         log_success "fzf installed"
     else
         log_error "git is required to install fzf."

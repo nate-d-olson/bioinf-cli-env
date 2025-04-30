@@ -409,6 +409,13 @@ get_sudo_command() {
     local no_interactive=${2:-false}
     local sudo_cmd=""
     
+    # Check if non-interactive mode is active via environment variable
+    if [[ -z "$no_interactive" || "$no_interactive" == "false" ]]; then
+        if [[ -n "${BIOINF_NON_INTERACTIVE:-}" ]]; then
+            no_interactive=true
+        fi
+    fi
+    
     # Check if sudo exists
     if ! cmd_exists sudo; then
         log_warning "sudo command not found. Some operations may fail."

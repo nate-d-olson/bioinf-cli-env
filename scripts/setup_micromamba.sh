@@ -12,6 +12,13 @@ CONFIG_FILE="${2:-}"
 MICROMAMBA_ROOT="$HOME/micromamba"
 BIN_DIR="${HOME}/.local/bin"
 
+# Check if we're running in non-interactive mode
+NONINTERACTIVE=false
+if [[ -n "${BIOINF_NON_INTERACTIVE:-}" ]]; then
+    NONINTERACTIVE=true
+    log_info "Running in non-interactive mode"
+fi
+
 mkdir -p "$BIN_DIR"
 
 # Install micromamba if not already installed

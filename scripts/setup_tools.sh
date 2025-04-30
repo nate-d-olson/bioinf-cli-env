@@ -13,6 +13,13 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Check if running in non-interactive mode
+NONINTERACTIVE=false
+if [[ -n "${BIOINF_NON_INTERACTIVE:-}" ]]; then
+    NONINTERACTIVE=true
+    log_info "Running in non-interactive mode"
+fi
+
 # Set default paths
 BIN_DIR="${HOME}/.local/bin"
 mkdir -p "$BIN_DIR"
@@ -120,13 +127,42 @@ install_package() {
         ;;
     apt)
         log_info "Installing $package via apt..."
-        if sudo apt-get update && sudo apt-get install -y "$package"; then
-            local version=$(dpkg -s "$package" 2>/dev/null | grep "^Version:" | cut -d ' ' -f 2)
-            record_version "$package" "$version (via apt)"
-            return 0
+        
+        # Check if we can use sudo non-interactively
+        local sudo_cmd="sudo"
+        if [[ "$NONINTERACTIVE" == "true" ]]; then
+            if ! sudo -n true 2>/dev/null; then
+                log_warning "No sudo access available in non-interactive mode. Will try direct installation."
+                sudo_cmd=""
+            fi
+        fi
+        
+        if [[ -n "$sudo_cmd" ]]; then
+            if $sudo_cmd apt-get update && $sudo_cmd apt-get install -y "$package"; then
+                local version=$(dpkg -s "$package" 2>/dev/null | grep "^Version:" | cut -d ' ' -f 2)
+                record_version "$package" "$version (via apt)"
+                return 0
+            else
+                log_error "Failed to install $package via apt with sudo"
+                return 1
+            fi
         else
-            log_error "Failed to install $package via apt"
-            return 1
+            # Try without sudo (may work in some environments)
+            if apt-get update && apt-get install -y "$package"; then
+                local version=$(dpkg -s "$package" 2>/dev/null | grep "^Version:" | cut -d ' ' -f 2)
+                record_version "$package" "$version (via apt)"
+                return 0
+            else
+                # Try direct download as fallback for non-interactive mode
+                if [[ -n "$github_url" ]]; then
+                    log_info "Attempting direct download instead..."
+                    install_binary "$package" "$github_url"
+                    return $?
+                else
+                    log_error "Failed to install $package via apt without sudo"
+                    return 1
+                fi
+            fi
         fi
         ;;
     *)
