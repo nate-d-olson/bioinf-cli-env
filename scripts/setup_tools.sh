@@ -265,6 +265,15 @@ install_tool() {
     
     log_info "$tool is not installed. Checking availability..."
     
+    # Skip apt package manager for tools that don't have apt packages
+    if [[ "$INSTALLER" == "apt" && "$tool" == "dust" ]]; then
+        if [[ -n "$github_url" ]]; then
+            log_info "$tool not available via apt, installing from GitHub..."
+            install_binary "$tool" "$github_url"
+            return $?
+        fi
+    fi
+    
     # Try package manager installation
     if is_package_available "$tool"; then
         install_package "$tool"
