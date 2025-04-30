@@ -13,8 +13,16 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Determine script directory in a shell-agnostic way
+if [ -n "${ZSH_VERSION:-}" ]; then
+    # zsh
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+else
+    # bash
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+fi
+
 # Constants
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$SCRIPT_DIR/config"
 SCRIPTS_DIR="$SCRIPT_DIR/scripts"
 BIN_DIR="${HOME}/.local/bin"
@@ -54,16 +62,29 @@ backup_file() {
     fi
 }
 
-# Function to prompt user
+# Function to prompt user - shell-agnostic implementation
 prompt() {
     local question="$1"
     local default="${2:-Y}"
+    local response=""
     
     if [[ "$default" == "Y" ]]; then
-        read -r -p "$question [Y/n]: " response
+        if [ -n "${ZSH_VERSION:-}" ]; then
+            # zsh doesn't support -p flag for read
+            echo -n "$question [Y/n]: "
+            read response
+        else
+            # bash supports -p flag
+            read -r -p "$question [Y/n]: " response
+        fi
         [[ -z "$response" || "$response" =~ ^[Yy] ]]
     else
-        read -r -p "$question [y/N]: " response
+        if [ -n "${ZSH_VERSION:-}" ]; then
+            echo -n "$question [y/N]: "
+            read response
+        else
+            read -r -p "$question [y/N]: " response
+        fi
         [[ "$response" =~ ^[Yy] ]]
     fi
 }
