@@ -62,11 +62,9 @@ install_available_tools() {
         sudo apt-get update && sudo apt-get install -y "${tools_to_install[@]}" && log_success "Installed tools via apt: ${tools_to_install[*]}"
     fi
 
-    if [ ${#snap_tools[@]} -gt 0 ]; then
-        for snap_tool in "${snap_tools[@]}"; do
-            sudo snap install "$snap_tool" && log_success "Installed $snap_tool via snap"
-        done
-    fi
+    for snap_tool in "${snap_tools[@]}"; do
+        sudo snap install "$snap_tool" && log_success "Installed $snap_tool via snap"
+    done
 }
 
 check_installed_tools() {
