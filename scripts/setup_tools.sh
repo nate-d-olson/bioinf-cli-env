@@ -73,7 +73,7 @@ check_installed_tools() {
     local tools_to_install=()
     for tool in "${TOOLS[@]}"; do
         if command -v "$tool" &>/dev/null; then
-            log_info "$tool is already installed: $(command -v $tool), version: $($tool --version | head -n 1)"
+            log_info "$tool is already installed: $(command -v $tool), version: $($tool --version | head -n 1)" >&2
         else
             tools_to_install+=("$tool")
         fi
