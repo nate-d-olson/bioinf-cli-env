@@ -62,32 +62,31 @@ install_available_tools() {
         sudo apt-get update && sudo apt-get install -y "${tools_to_install[@]}" && log_success "Installed tools via apt: ${tools_to_install[*]}"
     fi
 
-    for snap_tool in "${snap_tools[@]}"; do do
-        sudo snap install "$snap_tool" && log_success "Installed $snap_tool via snap"uccess "Installed $snap_tool via snap"
+    for snap_tool in "${snap_tools[@]}"; do
+        sudo snap install "$snap_tool" && log_success "Installed $snap_tool via snap"
     done
 }
 
-check_installed_tools() {heck_installed_tools() {
-    local tools_to_install=()    local tools_to_install=()
-    for tool in "${TOOLS[@]}"; do@]}"; do
-        if command -v "$tool" &>/dev/null; then &>/dev/null; then
-            log_info "$tool is already installed: $(command -v $tool), version: $($tool --version | head -n 1)" >&2ready installed: $(command -v $tool), version: $($tool --version | head -n 1)" >&2
+check_installed_tools() {
+    local tools_to_install=()
+    for tool in "${TOOLS[@]}"; do
+        if command -v "$tool" &>/dev/null; then
+            log_info "$tool is already installed: $(command -v $tool), version: $($tool --version | head -n 1)" >&2
         else
             tools_to_install+=("$tool")
         fi
     done
-    echo "${tools_to_install[@]}"${tools_to_install[@]}"
 }
 
-main() {ain() {
-    local tools_to_install    local tools_to_install
-    tools_to_install=$(check_installed_tools)s_to_install=$(check_installed_tools)
+main() {
+    local tools_to_install
+    tools_to_install=$(check_installed_tools)
 
     if [ -n "$tools_to_install" ]; then
-        log_info "Installing tools: $tools_to_install"        log_info "Installing tools: $tools_to_install"
-        install_available_tools "$tools_to_install"_to_install"
+        log_info "Installing tools: $tools_to_install"
+        install_available_tools "$tools_to_install"
     else
-        log_success "All tools are already installed."d."
+        log_success "All tools are already installed."
     fi
 }
 
