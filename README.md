@@ -1,4 +1,4 @@
-# __DO NOT USE (AT LEAST FOR NOT)__
+# __DO NOT USE (AT LEAST FOR NOW)__
 
 This repo is primarily a for me to play with agentic coding and maybe get a nice CLI setup in the end. Feel free to browse the code and submit comments or pull requests. Please don't try to use as is. I don't want you to mess up your system config.
 
