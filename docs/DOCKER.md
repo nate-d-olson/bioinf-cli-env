@@ -1,168 +1,108 @@
 # Testing with Docker
 
-This guide explains how to test the bioinformatics CLI environment using Docker.
+This guide explains how to test and troubleshoot the bioinformatics CLI environment using Docker.
 
 ## Prerequisites
 
-- [Docker](https://www.docker.com/get-started) installed on your system
-- Git clone of this repository
+- [Docker](https://www.docker.com/get-started) or compatible Docker alternative such as Colima (for macOS) installed on your system
+- Clone of this repository
 
 ## Building the Docker Image
 
-To build the Docker image, run the following command from the repository root:
+Run this command from the repository root:
 
 ```bash
 docker build -t bioinf-cli-env .
 ```
 
-This builds an image named `bioinf-cli-env` with all the tooling preinstalled.
+This builds the Docker image `bioinf-cli-env` with all pre-installed tools.
 
 ## Running the Docker Container
 
 ### Basic Usage
 
-Run the container with an interactive shell:
+Interactive shell within container:
 
 ```bash
 docker run -it bioinf-cli-env
 ```
 
-This will start a container with a ZSH shell and all the configured tools.
+### Mounting Local Data
 
-### Mount Local Files
-
-To access your local files within the container, use volume mounting:
+Mount local files within the Docker environment:
 
 ```bash
 docker run -it -v /path/to/your/data:/home/biouser/data bioinf-cli-env
 ```
 
-Replace `/path/to/your/data` with the absolute path to your data directory.
+Replace `/path/to/your/data` accordingly.
 
-### Run Specific Commands
+### Running Specific Commands
 
-You can also run specific commands in the container:
+Execute specific commands directly:
 
 ```bash
 docker run -it bioinf-cli-env micromamba env list
 ```
 
-## Testing Components
+## Testing Individual Components
 
-### Testing Micromamba
+### Micromamba Testing
 
-Inside the container, verify that micromamba is correctly installed:
+Verify micromamba's installation:
 
 ```bash
 micromamba --version
 micromamba env list
 ```
 
-Test the bioinformatics environment:
+Test the installed bioinformatics packages (excluding problematic ones noted in [troubleshooting](TROUBLESHOOTING.md)):
 
 ```bash
 micromamba activate base
 python -c "import numpy; print(numpy.__version__)"
 ```
 
-### Testing Job Monitoring
+### Job and Workflow Monitoring Testing
 
-Simulate a job for monitoring:
+Simulate a monitoring scenario:
 
 ```bash
-# Start a long-running task in the background
+# Run a simple background job
 sleep 300 &
-job_pid=$!
-
-# Monitor it
-monitoring_job $job_pid "Test Job"
+monitoring_job $! "Test Job"
 ```
 
-### Testing ZSH Configuration
+### ZSH Configuration
 
-Verify that the ZSH configuration is working correctly:
+Check Oh My Zsh and Powerlevel10k setup:
 
 ```bash
-# Check Oh My Zsh installation
 ls -la ~/.oh-my-zsh
-
-# Check Powerlevel10k
 echo $POWERLEVEL9K_MODE
-
-# Test syntax highlighting
-# Type a valid command and see if it gets highlighted
 ```
 
-### Testing Workflow Monitoring
+## Customizing and Extending Docker Image
 
-Inside the container, test workflow monitoring tools:
+Create your own Dockerfile for custom setups:
+
+```dockerfile
+FROM bioinf-cli-env
+
+USER biouser
+COPY custom_configs/ ~/custom_configs/
+RUN echo "source ~/custom_configs/.zsh_customizations" >> ~/.zshrc
+```
+
+And build the derived container:
 
 ```bash
-# Test Snakemake monitor
-bash scripts/workflow_monitors/snakemake_monitor.sh --help
-
-# Test Nextflow monitor
-bash scripts/workflow_monitors/nextflow_monitor.sh --help
-
-# Test WDL monitor
-bash scripts/workflow_monitors/wdl_monitor.sh --help
+docker build -t bioinf-cli-env-custom -f Dockerfile.custom .
 ```
 
-## Customization Testing
+## Using Docker in CI/CD
 
-You can test customizations by modifying the Docker image:
-
-1. Create a new `Dockerfile.custom`:
-
-   ```dockerfile
-   FROM bioinf-cli-env
-
-   USER biouser
-   WORKDIR /home/biouser
-
-   # Add your custom configurations
-   COPY --chown=biouser:biouser custom_config.zsh /home/biouser/.custom_config.zsh
-   RUN echo "source ~/.custom_config.zsh" >> ~/.zshrc
-   ```
-
-1. Build and run your custom image:
-
-   ```bash
-   docker build -t bioinf-cli-env-custom -f Dockerfile.custom .
-   docker run -it bioinf-cli-env-custom
-   ```
-
-## Troubleshooting Docker Issues
-
-### Container exits immediately
-
-If the container exits immediately, run with an explicit command:
-
-```bash
-docker run -it bioinf-cli-env /bin/bash
-```
-
-### Permission issues with mounted volumes
-
-If you encounter permission issues with mounted volumes, adjust the user ID:
-
-```bash
-docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) \
-    -t bioinf-cli-env .
-```
-
-### Networking issues
-
-If you need to access network resources from within the container:
-
-```bash
-docker run -it --network=host bioinf-cli-env
-```
-
-## Using Docker for CI/CD
-
-This Docker image can be used for continuous integration testing. Example GitHub
-Actions workflow:
+Follow this example GitHub Actions workflow for container testing:
 
 ```yaml
 jobs:
@@ -171,36 +111,75 @@ jobs:
     container:
       image: bioinf-cli-env:latest
     steps:
-      - name: Test micromamba
+      - name: Validate Micromamba
         run: micromamba --version
-      - name: Test bioinformatics tools
+      - name: Check Python Environment
         run: |
           micromamba activate base
-          python -c "import numpy; print('Numpy works!')"
+          python -c "import numpy; print(numpy.__version__)"
 ```
 
-## Extending the Docker Image
+## Troubleshooting Docker Issues
 
-To extend the Docker image for specific bioinformatics workflows:
+### Container Immediately Exits
 
-1. Create a new Dockerfile:
+Explicit command invocation as follows:
 
-   ```dockerfile
-   FROM bioinf-cli-env
+```bash
+docker run -it bioinf-cli-env /bin/bash
+```
 
-   USER root
-   RUN apt-get update && apt-get install -y \
-       additional-package1 \
-       additional-package2 \
-       && rm -rf /var/lib/apt/lists/*
+### Permission Errors With Mounted Volumes
 
-   USER biouser
-   RUN micromamba install -n base -c bioconda \
-       additional-bioconda-package
-   ```
+Adjust permissions with user and group ID build arguments:
 
-1. Build your extended image:
+```bash
+docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) \
+    -t bioinf-cli-env .
+```
 
-   ```bash
-   docker build -t my-bioinf-workflow -f Dockerfile.extended .
-   ```
+### Networking Issues
+
+If you encounter network issues:
+
+```bash
+docker run -it --network=host bioinf-cli-env
+```
+
+## Debugging Recommendations
+
+- Use Docker alternatives like Colima (macOS):
+
+```bash
+brew install colima colima start
+```
+
+- For advanced debugging locally, use `act` for testing GitHub workflows:
+
+```bash
+brew install act
+act -P ubuntu-latest=catthehacker/ubuntu:act-latest
+```
+
+## Extending Docker Container Functionality
+
+To extend functionalities explicitly:
+
+```dockerfile
+FROM bioinf-cli-env
+
+USER root
+RUN apt-get update && apt-get install -y additional-package \
+    && rm -rf /var/lib/apt/lists/*
+
+USER biouser
+RUN micromamba install -n base -c bioconda additional-bioconda-package
+```
+
+Then build:
+
+```bash
+docker build -t bioinf-cli-env-extended .
+```
+
+This structured guide enhances your Docker experience by clarifying and explicitly advising best practices for local and CI/CD scenarios.

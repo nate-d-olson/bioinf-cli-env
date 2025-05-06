@@ -1,63 +1,56 @@
 # CI/CD Guide
 
-This guide explains the Continuous Integration and Continuous Delivery (CI/CD)
-setup for the bioinformatics CLI environment.
+This guide covers Continuous Integration and Continuous Delivery (CI/CD) specifics for the bioinformatics CLI environment, offering explicit instructions for setup, testing, debugging, and enhancement.
 
 ## Overview
 
-The CI/CD pipeline automatically tests the environment setup on multiple platforms
-to ensure compatibility and reliability. It runs on every push to the main branch
-and for pull requests.
+The CI/CD pipeline systematically verifies the CLI environment setup on various platforms (Ubuntu, macOS). It validates environment consistency, tool availability, and pipeline compatibility upon each repository update.
 
-## Non-Interactive Installation Support
+## Non-Interactive Installation
 
-The installer now fully supports non-interactive mode for CI/CD environments:
+For automated CI/CD environments, utilize the supported non-interactive mode:
 
 ```bash
-# Basic non-interactive installation with default values
+# Default non-interactive installation
 ./install.sh --non-interactive
 
-# Non-interactive installation with custom configuration
+# Custom configuration
 ./install.sh --non-interactive --config custom.ini
 ```
 
-The `--non-interactive` flag:
-- Sets the `BIOINF_NON_INTERACTIVE` environment variable for all component scripts
-- Skips user prompts by using default or configuration file values
-- Prevents sudo password prompts from hanging the CI/CD pipeline
-- Uses direct binary downloads as a fallback when package manager installations require sudo
+The `--non-interactive` option enables:
+- Automated setup avoiding prompts
+- Default configurations or custom specified setups
+- Explicit fallback mechanisms when administrative permissions are limited
 
-## Pipeline Steps
+## CI/CD Pipeline Process
 
-1. **Environment Setup**
+### 1. Environment Initialization
 
-   - Ubuntu 24.04 and macOS environments
-   - Installation of system dependencies
-   - Configuration preparation
+Set up targeted environments (Ubuntu 24.04/macOS latest) clearly staging all dependencies, tools, and shell configurations.
 
-2. **Installation Testing**
+### 2. Installation Validation
 
-   - Full installation in non-interactive mode
-   - Modern CLI tools verification
-   - Shell configuration testing
-   - Job monitoring setup validation
+Automatic, non-interactive testing of:
 
-3. **Docker Build**
-   - Container image building
-   - Environment validation inside container
-   - Configuration testing
-   - Tool availability verification
+- CLI tools availability and versions (exa, bat, fd-find, micromamba, etc.)
+- Shell customizations and package management robustness
+- Monitoring and reporting configurations
+
+### 3. Docker Builds and Testing
+
+- Comprehensive Docker image lifecycle tests: build, validate, and explicitly verify tool availability and environment.
 
 ## Testing Matrix
 
 | Platform | Shell | Package Manager |
-| -------- | ----- | --------------- |
+|----------|-------|-----------------|
 | Ubuntu   | zsh   | apt             |
 | macOS    | zsh   | brew            |
 
-## Sample GitHub Actions Workflow
+## Example GitHub Actions Workflow
 
-Here's an example workflow for testing the installation:
+Clear workflow example for installation and verification:
 
 ```yaml
 name: CI
@@ -73,99 +66,117 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Setup Permissions
+        run: chmod +x ./install.sh
       - name: Install zsh
         run: sudo apt-get update && sudo apt-get install -y zsh
-      - name: Copy config template
+      - name: Copy and Configure
         run: cp config.ini.template ci-config.ini
-      - name: Run non-interactive installation
+      - name: Non-interactive Installation
         run: ./install.sh --non-interactive --config ci-config.ini
-      - name: Verify installation
+      - name: Explicit Verification
         run: |
+          export PATH="$HOME/.local/bin:$HOME/micromamba/bin:$PATH"
           source ~/.zshrc
-          zsh -c "command -v bat && command -v micromamba"
+          command -v bat && command -v micromamba
 
   test-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Copy config template
+      - name: Setup Permissions
+        run: chmod +x ./install.sh
+      - name: Copy and Configure
         run: cp config.ini.template ci-config.ini
-      - name: Run non-interactive installation
+      - name: Non-interactive Installation
         run: ./install.sh --non-interactive --config ci-config.ini
-      - name: Verify installation
+      - name: Explicit Verification
         run: |
+          export PATH="$HOME/.local/bin:$HOME/micromamba/bin:$PATH"
           source ~/.zshrc
-          zsh -c "command -v bat && command -v micromamba"
+          command -v bat && command -v micromamba
 ```
-
-## Docker Testing
-
-The Docker testing process includes:
-
-1. Building the container image
-2. Verifying tool installations
-3. Testing shell configurations
-4. Validating job monitoring
-5. Checking cross-platform compatibility
 
 ## Local Pipeline Testing
 
-To test the CI/CD pipeline locally:
+Use the `act` tool for explicit local GitHub Actions workflow simulations:
+
+### Installation and Basic Usage
 
 ```bash
-# Install act (GitHub Actions runner)
 brew install act
-
-# Run the full pipeline
-act -P ubuntu-latest=ubuntu:24.04
-
-# Run specific job
-act -j test-ubuntu
-
-# Test non-interactive installation
-cp config.ini.template local-test.ini
-# Edit local-test.ini as needed
-./install.sh --non-interactive --config local-test.ini
+act -P ubuntu-latest=catthehacker/ubuntu:act-latest
 ```
 
-## Status Badges
+Explicitly simulate entire pipeline or individual jobs:
 
-Include these badges in your fork's README:
+```bash
+# Full pipeline simulation
+act
+
+# Specific job execution
+act -j test-ubuntu
+```
+
+## Integration with Docker
+
+Continuous validation via Docker-based strategies:
+
+- Building and testing Docker images explicitly from workflows
+- Aligning Docker and CI environments for consistency across local and remote setups
+
+
+## Debugging and Troubleshooting
+
+When failures occur in CI/CD:
+1. Examine clear logs on GitHub Actions UI.
+2. Run individual failing steps locally using `act`.
+
+Enable verbose logging for detailed debug output:
+
+```yaml
+jobs:
+  test:
+    steps:
+      - name: Enable Verbose Logging
+        run: |
+          export ACTIONS_STEP_DEBUG=true
+          echo "VERBOSE_OUTPUT=true" >> ci-config.ini
+```
+
+Test failing scenarios clearly and systematically:
+
+```bash
+act -j <job-name>
+```
+
+Ensure clear alignment between local setup and CI/CD pipeline environments for consistent testing results.
+
+## Status & Customization
+
+Display CI/CD status badges in project README:
 
 ```markdown
 ![CI](https://github.com/username/bioinf-cli-env/actions/workflows/ci.yml/badge.svg)
 ```
 
-## Debugging CI/CD Failures
+Explicitly customize workflows:
+- Edit `.github/workflows/ci.yml` with additional checks and custom verification procedures
 
-If a CI/CD job fails:
+## Advanced Debugging Techniques
 
-1. Review the logs in the GitHub Actions interface.
-2. Re-run the job with debug logging enabled:
+- Consider Docker alternatives (Colima) explicitly for local macOS testing:
 
-   ```yaml
-   jobs:
-     test:
-       steps:
-         - name: Enable debug logging
-           run: |
-             export ACTIONS_STEP_DEBUG=true
-             # For more verbose installation logs
-             echo "VERBOSE_OUTPUT=true" >> ci-config.ini
-   ```
+```bash
+brew install colima
+colima start
+```
 
-3. Test the failing step locally using `act`:
+- Export paths explicitly in verification steps to local environments in workflows:
 
-   ```bash
-   act -j <job-name>
-   ```
+```yaml
+export PATH="$HOME/.local/bin:$HOME/micromamba/bin:$PATH"
+source "$HOME/.zshrc"
+```
 
-4. Verify the environment setup matches the pipeline configuration.
-
-## Customizing the Pipeline
-
-To customize the pipeline for specific workflows:
-
-1. Modify the `ci.yml` file to include additional steps or jobs.
-2. Add environment variables or secrets as needed in the GitHub repository settings.
-3. Test changes locally using `act` before pushing to the repository.
+This enhanced debugging documentation provides explicit troubleshooting steps to facilitate a robust and clear CI/CD pipeline, ensuring rapid issue resolution and improved development workflows.

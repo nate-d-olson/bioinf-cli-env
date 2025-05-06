@@ -1,7 +1,6 @@
 # User Guide
 
-This guide provides comprehensive information about using the bioinformatics CLI
-environment effectively.
+This guide provides comprehensive information about using the bioinformatics CLI environment effectively.
 
 ## Getting Started
 
@@ -10,7 +9,7 @@ environment effectively.
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/bioinf-cli-env.git
+   git clone https://github.com/nate-d-olson/bioinf-cli-env.git
    cd bioinf-cli-env
    ```
 
@@ -43,9 +42,9 @@ environment effectively.
 
 The environment provides several enhanced commands:
 
-- `ll`, `la`: Enhanced file listing with `eza`
+- `ll`, `la`: Enhanced file listing with `exa`
 - `cat`: Syntax-highlighted file viewing with `bat`
-- `find`: Improved file finding with `fd`
+- `fd`: Improved file finding (provided by `fd-find`, symlinked to `fd`)
 - `grep`: Better text search with `ripgrep`
 - `z`: Smart directory jumping with `zoxide`
 
@@ -87,12 +86,21 @@ htop -p $(pgrep process_name)
 # Activate environment
 micromamba activate bioinf
 
-# Install package
-micromamba install -c bioconda new-package
+# Install a package
+micromamba install -c bioconda <package-name>
 
 # List installed packages
 micromamba list
 ```
+
+### 🚧 Known Micromamba Issues
+
+The following bioinformatics packages are currently facing issues and are excluded from the default Micromamba environment configuration:
+
+- `dipcall`: Has unresolved dependency issues (`unimap`). Consider alternative tools or manual installation.
+- `truvari`: Compatibility issues with current Python environments. Consider manual installation or alternative tools.
+
+These packages will not be installed automatically during the setup process.
 
 ## Job Management
 
@@ -205,8 +213,7 @@ select_palette --save custom
 
 #### Selective Sync
 
-To exclude specific files or directories from synchronization, create a `.syncignore` file in your 
-home directory:
+To exclude specific files or directories from synchronization, create a `.syncignore` file in your home directory:
 
 ```text
 .aws/credentials

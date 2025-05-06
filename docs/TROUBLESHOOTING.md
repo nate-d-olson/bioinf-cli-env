@@ -31,16 +31,27 @@ bash scripts/setup_tools.sh
 
 ### Micromamba Environment Issues
 
-If micromamba environments are not working:
+#### Installation and Environment Not Found
 
-1. Check initialization in `.zshrc`
-2. Verify installation location
+If micromamba environments or tools fail to install or activate:
+
+1. Confirm initialization snippet is correctly included in `.zshrc`.
+2. Verify installation location. Typical path is `$HOME/micromamba/bin/micromamba` or `$HOME/.local/bin/micromamba`.
 3. Try reinstalling:
 
 ```bash
 rm -rf ~/micromamba
 bash scripts/setup_micromamba.sh
 ```
+
+#### Known Issues with Specific Micromamba Packages
+
+Certain packages are known to have compatibility and dependency issues:
+
+- **`dipcall` package:** Requires the unavailable package `unimap`. Suggest avoiding automatic installations or manually resolving dependencies.
+- **`truvari` package:** Known conflicts with current Python environment configurations. Suggested manual installation or using alternative variant analysis tools.
+
+These packages will typically fail to install automatically and are excluded from the default configuration.
 
 ## Runtime Issues
 
@@ -58,10 +69,10 @@ bash scripts/workflow_monitors/snakemake_monitor.sh --debug test.log
 
 ### Cross-System Sync Issues
 
-If sync.sh fails:
+If `sync.sh` fails:
 
 1. Verify SSH configuration
-2. Check host configuration in sync_hosts
+2. Check host configuration in `sync_hosts`
 3. Test SSH connection:
 
 ```bash
@@ -96,7 +107,7 @@ p10k configure
 
 ### Plugin Conflicts
 
-If zsh plugins conflict:
+If Zsh plugins conflict:
 
 1. Load plugins one by one
 2. Check plugin order in `.zshrc`
@@ -104,11 +115,11 @@ If zsh plugins conflict:
 
 ## System-Specific Issues
 
-### macOS Issues
+### macOS issues
 
 Common macOS-specific fixes:
 
-1. Reset zsh configuration:
+1. Reset Zsh configuration:
 
    ```bash
    mv ~/.zshrc ~/.zshrc.bak
@@ -121,7 +132,7 @@ Common macOS-specific fixes:
    chmod 755 ~/.local/bin/*
    ```
 
-### Linux Issues
+### Linux issues
 
 Common Linux-specific fixes:
 
@@ -138,9 +149,9 @@ Common Linux-specific fixes:
    chown -R $USER:$USER ~/.local
    ```
 
-## Uninstallation Issues
+## Uninstallation issues
 
-If uninstall.sh fails:
+If `uninstall.sh` fails:
 
 1. Check file permissions
 2. Run with debug output:

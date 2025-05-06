@@ -1,21 +1,12 @@
-# __DO NOT USE (AT LEAST FOR NOW)__
-
-This repo is primarily a for me to play with agentic coding and maybe get a nice CLI setup in the end. Feel free to browse the code and submit comments or pull requests. Please don't try to use as is. I don't want you to mess up your system config.
-
 # Bioinformatics CLI Environment
 
-A comprehensive command-line environment setup for bioinformatics work, featuring:
+**🚧 Project Status: Alpha version (actively in development)**
 
-- Modern command-line tools for improved productivity
-- Shell configuration with Oh My Zsh and Powerlevel10k theme
-- Micromamba for bioinformatics package management
-- Workflow monitoring tools for Snakemake, Nextflow, and WDL pipelines
-- SLURM job management utilities
-- Color palette selector for data visualization
+This repository is geared toward developing a comprehensive command-line environment to enhance productivity in bioinformatics pipeline development. Currently, this project is considered an **alpha release**, undergoing active development and debugging. Feel free to explore, test, and contribute, but exercise caution regarding system configurations due to ongoing changes.
 
-![CI](https://github.com/nate-d-olson/bioinf-cli-env/actions/workflows/ci.yml/badge.svg)
-![Docker](https://img.shields.io/docker/pulls/nate-d-olson/bioinf-cli-env)
-![License](https://img.shields.io/github/license/nate-d-olson/bioinf-cli-env)
+For detailed developer guidance, see [`GOOSE_DEV_SESSION_GUIDE.md`](GOOSE_DEV_SESSION_GUIDE.md).
+
+---
 
 ## Quick Start
 
@@ -31,74 +22,42 @@ nano config.ini
 # Run the installer (interactive mode)
 ./install.sh
 
-# For non-interactive installation with a custom config file
+# Non-interactive installation mode
 ./install.sh --non-interactive --config custom_config.ini
 ```
 
-## Features
+## Key Features
 
-### Modern CLI Tools
+- 🛠 **Modern CLI Tools:** Enhanced file navigation (`exa`), file viewing (`bat`), fast searching (`ripgrep`, `fd-find`), and more.
+- 🎨 **Shell Enhancement:** Oh My Zsh with Powerlevel10k theme, syntax highlighting, autocompletion.
+- 🌿 **Package Management:** Micromamba for managing bioinformatics software.
+- 📊 **Workflow Monitoring:** Track and visualize Snakemake, Nextflow, Cromwell (WDL) jobs.
+- 🚦 **Job Management:** Advanced SLURM utilities for HPC clusters.
+- 🎨 **Color Palette Selector:** Customize your terminal for data visualization.
+- ⛅ **Optional Integrations:** Azure OpenAI (CLI integration planned for future implementation).
+- 🔄 **Cross-System Synchronization:** Easily synchronize setup across different machines.
+- 🛡 **Backup and Restore Functionality:** Ensure your custom configurations are safe and reusable.
 
-- File navigation and viewing with `eza`, `bat`, `ripgrep`, and `fd`
-- Fuzzy finding with `fzf`
-- JSON processing with `jq`
-- System monitoring with `htop`
-- Terminal multiplexing with `tmux`
-- Directory jumping with `zoxide`
+## Documentation Overview
 
-### Shell Configuration
-
-- Oh My Zsh with Powerlevel10k theme
-- Syntax highlighting and autosuggestions
-- Custom aliases and functions
-- Improved command completion
-
-### Package Management
-
-- Micromamba for fast conda-compatible package management
-- Pre-configured bioinformatics environment
-- Easy environment switching
-
-### Workflow Monitoring
-
-- Real-time monitoring for Snakemake pipelines
-- Nextflow workflow tracking
-- WDL/Cromwell job monitoring
-- Resource usage visualization
-
-### Job Management
-
-- Enhanced SLURM job status monitoring
-- Interactive job templates
-- Job notification system
-- Resource usage tracking
-
-### Additional Features
-
-- Color palette selector for visualization work
-- Azure OpenAI CLI integration (optional)
-- Cross-system configuration sync
-- Backup and restore functionality
-
-## Documentation
-
-For detailed information, see:
+Detailed documentation is available in the following:
 
 - [User Guide](docs/USER_GUIDE.md)
+- [Development Guide](docs/DEVELOPER_GUIDE.md)
 - [Customization](docs/CUSTOMIZATION.md)
-- [Job Monitoring](docs/JOB_MONITORING.md)
 - [Docker Usage](docs/DOCKER.md)
 - [Local Testing](docs/LOCAL_TESTING.md)
-- [CI/CD](docs/CI_CD.md)
+- [CI/CD Instructions](docs/CI_CD.md)
+- [Job Monitoring](docs/JOB_MONITORING.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-## Requirements
+## System Requirements
 
-- Linux or macOS
-- Bash or Zsh shell
-- Git
-- Optional: Docker for containerized usage
+- Operating System: Linux or macOS
+- Shell: Bash/Zsh (recommended Zsh)
+- Git: Version control workflow
+- Docker (optional): Container-based workflows
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
