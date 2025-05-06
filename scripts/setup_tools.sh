@@ -21,7 +21,7 @@ fi
 log_info "Using $INSTALLER to install CLI tools..."
 
 # Define tools to install (removed yq)
-TOOLS=("bat" "exa" "ripgrep" "fd-find" "jq" "fzf" "htop" "tmux" "zoxide")
+TOOLS=("bat" "eza" "ripgrep" "fd-find" "jq" "fzf" "htop" "tmux" "zoxide")
 
 install_tools_brew() {
     brew update
