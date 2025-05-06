@@ -20,74 +20,52 @@ fi
 
 log_info "Using $INSTALLER to install CLI tools..."
 
-# Define tools to install
-TOOLS=("bat" "eza" "ripgrep" "fd" "jq" "fzf" "htop" "tmux" "zoxide" "yq")
+# Define tools to install (removed yq)
+TOOLS=("bat" "exa" "ripgrep" "fd-find" "jq" "fzf" "htop" "tmux" "zoxide")
 
-check_available_tools() {
-    local available_tools=()
-    for tool in "${TOOLS[@]}"; do
-        case "$INSTALLER" in
-            brew)
-                if brew info "$tool" &>/dev/null; then
-                    available_tools+=("$tool")
-                else
-                    log_warning "$tool not available via brew"
-                fi
-                ;;
-            apt)
-                if apt-cache show "$tool" &>/dev/null; then
-                    available_tools+=("$tool")
-                else
-                    log_warning "$tool not available via apt"
-                fi
-                ;;
-        esac
-    done
-    echo "${available_tools[@]}"
+install_tools_brew() {
+    brew update
+    brew install "${TOOLS[@]}" yq
 }
 
-install_available_tools() {
-    local tools_to_install=()
-    local snap_tools=()
+install_tools_apt() {
+    sudo apt-get update
 
-    for tool in "$@"; do
-        if apt-cache show "$tool" &>/dev/null; then
-            tools_to_install+=("$tool")
+    # Install tools using apt
+    for tool in "${TOOLS[@]}"; do
+        if [[ "$tool" == "bat" ]]; then
+            sudo apt-get install -y bat
+            sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
+        elif [[ "$tool" == "fd-find" ]]; then
+            sudo apt-get install -y fd-find
+            sudo ln -sf /usr/bin/fd-find /usr/local/bin/fd
         else
-            snap_tools+=("$tool")
+            sudo apt-get install -y "$tool"
         fi
     done
 
-    if [ ${#tools_to_install[@]} -gt 0 ]; then
-        sudo apt-get update && sudo apt-get install -y "${tools_to_install[@]}" && log_success "Installed tools via apt: ${tools_to_install[*]}"
-    fi
-
-    for snap_tool in "${snap_tools[@]}"; do
-        sudo snap install "$snap_tool" && log_success "Installed $snap_tool via snap"
-    done
-}
-
-check_installed_tools() {
-    local tools_to_install=()
-    for tool in "${TOOLS[@]}"; do
-        if command -v "$tool" &>/dev/null; then
-            log_info "$tool is already installed: $(command -v $tool), version: $($tool --version | head -n 1)" >&2
-        else
-            tools_to_install+=("$tool")
-        fi
-    done
+    # Explicitly install yq from official release to avoid apt issues
+    YQ_BINARY="${BIN_DIR}/yq"
+    sudo curl -fsSL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o "$YQ_BINARY"
+    sudo chmod +x "$YQ_BINARY"
+    log_success "yq installed successfully via official release."
 }
 
 main() {
-    local tools_to_install
-    tools_to_install=$(check_installed_tools)
+    case "$INSTALLER" in
+        "brew")
+            install_tools_brew
+            ;;
+        "apt")
+            install_tools_apt
+            ;;
+        *)
+            log_error "Unsupported installer: $INSTALLER"
+            exit 1
+            ;;
+    esac
 
-    if [ -n "$tools_to_install" ]; then
-        log_info "Installing tools: $tools_to_install"
-        install_available_tools "$tools_to_install"
-    else
-        log_success "All tools are already installed."
-    fi
+    log_success "CLI tools installation completed."
 }
 
 main "$@"

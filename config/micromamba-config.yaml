@@ -2,7 +2,6 @@ name: bioinf
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
   # Core bioinformatics tools that work across platforms
   - samtools
@@ -13,34 +12,3 @@ dependencies:
   - seqtk
   - seqkit
   - csvkit
-  # Platform-specific tools will be added conditionally via the setup script
-  # Additional tools can be uncommented as needed
-  # - snakemake
-  # - nextflow
-  # - bowtie2
-  # - vcftools
-  # - fastp
-  # - fastqc
-  # - multiqc
-  # - igv
-  # # Python data science
-  # - python=3.10
-  # - pandas
-  # - numpy
-  # - scipy
-  # - matplotlib
-  # - seaborn
-  # - scikit-learn
-  # - biopython
-  # - jupyter
-  # # R packages
-  # - r-base
-  # - r-tidyverse
-  # - r-ggplot2
-  # - bioconductor-deseq2
-  # - bioconductor-edger
-  # # Development tools
-  # - git
-  # - gh
-  # - jq
-  # - parallel

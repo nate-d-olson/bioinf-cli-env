@@ -37,6 +37,12 @@ if ! az extension show --name ml &>/dev/null; then
     az extension add --name ml
 fi
 
+# # Install Azure CLI OpenAI extension if needed
+# if ! az extension show --name openai &>/dev/null; then
+#     log_info "Installing Azure CLI OpenAI extension..."
+#     az extension add --name openai
+# fi
+
 # Create the Azure OpenAI functions in .zsh_azure_llm
 cat >"$ZSH_LLM_FILE" <<'ENDZSH'
 # Azure OpenAI CLI integration for terminal
@@ -49,7 +55,7 @@ if [[ -f "$AZURE_LLM_CONFIG" ]]; then
     source "$AZURE_LLM_CONFIG"
 fi
 
-# Simple function to interact with Azure OpenAI
+# Update the `llm` function to include additional parameters for robust API calls.
 function llm() {
     if [[ $# -eq 0 ]]; then
         echo "Usage: llm \"your question\""
@@ -57,19 +63,26 @@ function llm() {
     fi
 
     # Check if configuration exists
-    if [[ -z "${AZURE_OPENAI_DEPLOYMENT:-}" ]]; then
+    if [[ -z "${AZURE_OPENAI_DEPLOYMENT:-}" || -z "${AZURE_OPENAI_ENDPOINT:-}" || -z "${AZURE_OPENAI_KEY:-}" ]]; then
         echo "⚠️ Azure OpenAI not configured. Run 'llm-setup' first."
         return 1
     fi
 
     local prompt="$*"
     local result
-    result=$(az openai chat-completion create \
-        --deployment "$AZURE_OPENAI_DEPLOYMENT" \
-        --messages "[{\"role\":\"user\",\"content\":\"$prompt\"}]" \
-        --query "choices[0].message.content" -o tsv 2>/dev/null)
-    
-    if [[ $? -eq 0 ]]; then
+    result=$(curl -X POST "${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=2025-01-01-preview" \
+        -H "Content-Type: application/json" \
+        -H "api-key: ${AZURE_OPENAI_KEY}" \
+        -d '{
+            "messages": [{"role": "user", "content": "'$prompt'"}],
+            "max_tokens": 952,
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "frequency_penalty": 0,
+            "presence_penalty": 0
+        }' 2>/dev/null | jq -r '.choices[0].message.content')
+
+    if [[ $? -eq 0 && -n "$result" ]]; then
         echo "$result"
     else
         echo "❌ Error communicating with Azure OpenAI. Please check your configuration."
@@ -77,50 +90,68 @@ function llm() {
     fi
 }
 
-# Setup function to configure Azure OpenAI
+# Update the `llm-setup` function to include deployment-specific endpoint configuration.
 function llm-setup() {
-    echo "🔧 Configuring Azure OpenAI CLI integration"
-    
-    read -p "Enter your Azure OpenAI deployment name: " deployment
-    read -p "Enter your Azure OpenAI endpoint (optional): " endpoint
-    read -p "Enter your Azure OpenAI API key (optional): " api_key
-    
+    echo "🔧 Configuring Azure OpenAI REST API integration"
+
+    # Prompt for deployment name
+    echo -n "Enter your Azure OpenAI deployment name: "
+    read deployment
+    if [[ -z "$deployment" ]]; then
+        echo "❌ Deployment name cannot be empty. Aborting setup."
+        return 1
+    fi
+
+    # Prompt for endpoint
+    echo -n "Enter your Azure OpenAI endpoint (e.g., https://<resource>.openai.azure.com): "
+    read endpoint
+    if [[ -z "$endpoint" ]]; then
+        echo "❌ Endpoint cannot be empty. Aborting setup."
+        return 1
+    fi
+
+    # Prompt for API key
+    echo -n "Enter your Azure OpenAI API key: "
+    read api_key
+    if [[ -z "$api_key" ]]; then
+        echo "❌ API key cannot be empty. Aborting setup."
+        return 1
+    fi
+
     # Save configuration
     cat > "$AZURE_LLM_CONFIG" << EOF
 # Azure OpenAI Configuration
 export AZURE_OPENAI_DEPLOYMENT="$deployment"
+export AZURE_OPENAI_ENDPOINT="$endpoint"
+export AZURE_OPENAI_KEY="$api_key"
 EOF
 
-    if [[ -n "$endpoint" ]]; then
-        echo "export AZURE_OPENAI_ENDPOINT=\"$endpoint\"" >> "$AZURE_LLM_CONFIG"
-    fi
-    
-    if [[ -n "$api_key" ]]; then
-        echo "export AZURE_OPENAI_KEY=\"$api_key\"" >> "$AZURE_LLM_CONFIG"
-    fi
-    
     # Set permissions
     chmod 600 "$AZURE_LLM_CONFIG"
-    
-    # Load the new configuration
-    source "$AZURE_LLM_CONFIG"
-    
-    echo "✅ Configuration saved."
-    echo "You can now use 'llm \"your question\"' to chat with the model."
+
+    # Verify configuration
+    if [[ -f "$AZURE_LLM_CONFIG" ]]; then
+        source "$AZURE_LLM_CONFIG"
+        echo "✅ Configuration saved."
+        echo "You can now use 'llm \"your question\"' to chat with the model."
+    else
+        echo "❌ Failed to save configuration. Please try again."
+        return 1
+    fi
 }
 
-# Function to update configuration
+# Update the `llm-config` function to display the new configuration format.
 function llm-config() {
     if [[ ! -f "$AZURE_LLM_CONFIG" ]]; then
         echo "⚠️ No configuration found. Run 'llm-setup' first."
         return 1
-    }
-    
+    fi
+
     echo "Current configuration:"
     echo "Deployment: ${AZURE_OPENAI_DEPLOYMENT:-not set}"
     echo "Endpoint: ${AZURE_OPENAI_ENDPOINT:-not set}"
     echo "API Key: ${AZURE_OPENAI_KEY:+set (hidden)}"
-    
+
     echo
     echo "Run 'llm-setup' to update configuration."
 }

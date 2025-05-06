@@ -4,20 +4,12 @@ set -euo pipefail
 
 # Source common utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=utils/common.sh
 source "$SCRIPT_DIR/utils/common.sh"
 
 ACTION="${1:-install}"
 CONFIG_FILE="${2:-}"
 MICROMAMBA_ROOT="$HOME/micromamba"
 BIN_DIR="${HOME}/.local/bin"
-
-# Check if we're running in non-interactive mode
-NONINTERACTIVE=false
-if [[ -n "${BIOINF_NON_INTERACTIVE:-}" ]]; then
-    NONINTERACTIVE=true
-    log_info "Running in non-interactive mode"
-fi
 
 mkdir -p "$BIN_DIR"
 
@@ -31,14 +23,9 @@ install_micromamba() {
     log_info "Installing micromamba..."
 
     # Get platform information
-    local platform
-    platform=$(detect_platform)
-
-    local os
-    os=$(get_os "$platform")
-
-    local arch
-    arch=$(get_arch "$platform")
+    local platform=$(detect_platform)
+    local os=$(get_os "$platform")
+    local arch=$(get_arch "$platform")
 
     log_info "Detected platform: $platform (OS: $os, Arch: $arch)"
 
@@ -73,58 +60,6 @@ install_micromamba() {
         rm -rf bin
     else
         die "Failed to download micromamba"
-    fi
-
-    # Initialize micromamba
-    "$BIN_DIR/micromamba" shell init -s bash "$MICROMAMBA_ROOT"
-    "$BIN_DIR/micromamba" shell init -s zsh "$MICROMAMBA_ROOT"
-
-    # Add micromamba to the current PATH if not already there
-    if ! echo "$PATH" | tr ':' '\n' | grep -q "$BIN_DIR"; then
-        export PATH="$BIN_DIR:$PATH"
-    fi
-
-    log_success "Micromamba installed to $BIN_DIR/micromamba"
-}
-
-# Install platform-specific packages
-install_platform_specific_packages() {
-    local env_name="$1"
-    local platform
-    platform=$(detect_platform)
-
-    local os
-    os=$(get_os "$platform")
-
-    local arch
-    arch=$(get_arch "$platform")
-
-    log_info "Installing platform-specific packages for $os-$arch..."
-
-    # Skip problematic packages on macOS
-    if [[ "$os" == "darwin" ]]; then
-        log_info "Skipping platform-incompatible packages on macOS"
-        # Optionally install macOS-compatible alternatives here if needed
-    else
-        # Install Linux-specific packages
-        log_info "Installing additional bioinformatics tools for Linux..."
-        if micromamba list -n "$env_name" | grep -q "dipcall"; then
-            log_info "dipcall already installed"
-        else
-            micromamba install -n "$env_name" -c bioconda -c conda-forge -y dipcall || log_warning "Failed to install dipcall, continuing anyway"
-        fi
-        
-        if micromamba list -n "$env_name" | grep -q "truvari"; then
-            log_info "truvari already installed"
-        else
-            micromamba install -n "$env_name" -c bioconda -c conda-forge -y truvari || log_warning "Failed to install truvari, continuing anyway"
-        fi
-    fi
-
-    # Install platform-specific packages for Apple Silicon if needed
-    if [[ "$os" == "darwin" && "$arch" == "arm64" ]]; then
-        log_info "Detected Apple Silicon, applying specific configurations..."
-        # Add Apple Silicon specific configurations or packages if needed
     fi
 }
 
@@ -178,7 +113,7 @@ create_environment() {
         log_info "Creating new environment..."
         micromamba create -y -f "$CONFIG_FILE"
     fi
-    
+
     # Install platform-specific packages
     install_platform_specific_packages "$ENV_NAME"
 
@@ -209,38 +144,53 @@ EOF
 
     log_success "Bioinformatics environment setup complete!"
     log_info "To activate your environment, restart your shell and run: bioinf"
+
+    # Initialize micromamba
+    "$BIN_DIR/micromamba" shell init -s bash "$MICROMAMBA_ROOT"
+    "$BIN_DIR/micromamba" shell init -s zsh "$MICROMAMBA_ROOT"
+
+    # Add micromamba to the current PATH if not already there
+    if ! echo "$PATH" | tr ':' '\n' | grep -q "$BIN_DIR"; then
+        export PATH="$BIN_DIR:$PATH"
+    fi
+
+    log_success "Micromamba installed to $BIN_DIR/micromamba"
 }
 
-# Cleanup micromamba environments and installation
-cleanup_micromamba() {
-    log_info "Cleaning up micromamba..."
-    
-    # Check if micromamba exists
-    if cmd_exists micromamba; then
-        # List and remove all environments except base
-        while IFS= read -r env; do
-            [[ "$env" == "base" || -z "$env" ]] && continue
-            log_info "Removing environment: $env"
-            micromamba env remove -y -n "$env" || log_warning "Failed to remove environment: $env"
-        done < <(micromamba env list | tail -n +3 | awk '{print $1}')
-        
-        # Remove micromamba binaries and root directory if needed
-        if [[ -d "$MICROMAMBA_ROOT" ]]; then
-            log_info "Removing micromamba root directory: $MICROMAMBA_ROOT"
-            rm -rf "$MICROMAMBA_ROOT"
-        fi
-        
-        if [[ -f "$BIN_DIR/micromamba" ]]; then
-            log_info "Removing micromamba binary"
-            rm -f "$BIN_DIR/micromamba"
-        fi
+# Install platform-specific packages
+install_platform_specific_packages() {
+    local env_name="$1"
+    local platform=$(detect_platform)
+    local os=$(get_os "$platform")
+    local arch=$(get_arch "$platform")
+
+    log_info "Installing platform-specific packages for $os-$arch..."
+
+    # Skip problematic packages on macOS
+    if [[ "$os" == "darwin" ]]; then
+        log_info "Skipping platform-incompatible packages on macOS"
     else
-        log_warning "Micromamba not found in PATH"
+        # Install Linux-specific packages
+        log_info "Installing additional bioinformatics tools for Linux..."
+        if micromamba list -n "$env_name" | grep -q "dipcall"; then
+            log_info "dipcall already installed"
+        else
+            micromamba install -n "$env_name" -c bioconda -c conda-forge -y dipcall || log_warning "Failed to install dipcall, continuing anyway"
+        fi
+        
+        if micromamba list -n "$env_name" | grep -q "truvari"; then
+            log_info "truvari already installed"
+        else
+            micromamba install -n "$env_name" -c bioconda -c conda-forge -y truvari || log_warning "Failed to install truvari, continuing anyway"
+        fi
     fi
-    
-    log_success "Micromamba cleanup complete"
-    return 0
+
+    if [[ "$os" == "darwin" && "$arch" == "arm64" ]]; then
+        log_info "Detected Apple Silicon, applying specific configurations..."
+    fi
 }
+
+
 
 # Main execution
 case "$ACTION" in

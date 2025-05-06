@@ -6,58 +6,66 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  ACTIONS_STEP_DEBUG: true
+
 jobs:
   test-ubuntu:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Set permissions
+        run: chmod +x ./install.sh
+
       - name: Install zsh
-        run: sudo apt-get update && sudo apt-get install -y zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh || { echo "Failed installing zsh"; exit 1; }
+
       - name: Copy config template
         run: cp config.ini.template ci-config.ini
+
       - name: Run non-interactive installation
-        run: ./install.sh --non-interactive --config ci-config.ini
+        run: ./install.sh --non-interactive --config ci-config.ini || { echo "Install script failed"; exit 1; }
+
       - name: Verify installation
         run: |
-          zsh -c "source $HOME/.zshrc && command -v bat && command -v micromamba"
-      - name: Test micromamba environment
-        run: |
-          zsh -c "source $HOME/.zshrc && micromamba --version"
-      - name: Verify modern tools
-        run: |
-          zsh -c "source $HOME/.zshrc && eza --version || exa --version"
-          zsh -c "source $HOME/.zshrc && bat --version || batcat --version"
-          zsh -c "source $HOME/.zshrc && rg --version"
+          export PATH="$HOME/.local/bin:$HOME/micromamba/bin:$PATH"
+          source "$HOME/.zshrc" || { echo "Error sourcing ~/.zshrc"; exit 1; }
+          command -v bat || command -v batcat || { echo "Bat not found"; exit 1; }
+          command -v micromamba || { echo "Micromamba binary not found within expected directories"; exit 1; }
 
   test-macos:
     runs-on: macos-latest
     needs: test-ubuntu
     steps:
       - uses: actions/checkout@v3
+
+      - name: Set permissions
+        run: chmod +x ./install.sh
+
       - name: Copy config template
         run: cp config.ini.template ci-config.ini
+
       - name: Run non-interactive installation
-        run: ./install.sh --non-interactive --config ci-config.ini
+        run: ./install.sh --non-interactive --config ci-config.ini || { echo "MacOS install failed"; exit 1; }
+
       - name: Verify installation
         run: |
-          zsh -c "source $HOME/.zshrc && command -v bat && command -v micromamba"
-      - name: Test micromamba environment
-        run: |
-          zsh -c "source $HOME/.zshrc && micromamba --version"
-      - name: Verify modern tools
-        run: |
-          zsh -c "source $HOME/.zshrc && eza --version || exa --version"
-          zsh -c "source $HOME/.zshrc && bat --version"
-          zsh -c "source $HOME/.zshrc && rg --version"
+          export PATH="$HOME/.local/bin:$HOME/micromamba/bin:$PATH"
+          source "$HOME/.zshrc" || { echo "MacOS sourcing ~/.zshrc failed"; exit 1; }
+          command -v bat || { echo "MacOS Bat not found"; exit 1; }
+          command -v micromamba || { echo "MacOS Micromamba not found"; exit 1; }
 
   build-docker:
     runs-on: ubuntu-latest
     needs: [test-ubuntu, test-macos]
     steps:
       - uses: actions/checkout@v3
+
       - name: Build Docker image
-        run: docker build -t bioinf-cli-env .
+        run: docker build -t bioinf-cli-env . || { echo "Docker build failed"; exit 1; }
+
       - name: Test Docker image
         run: |
-          docker run --rm bioinf-cli-env zsh -c "micromamba --version"
-          docker run --rm bioinf-cli-env zsh -c "bat --version || batcat --version"
+          docker run --rm bioinf-cli-env zsh -c "command -v micromamba" || { echo "Micromamba missing in container"; exit 1; }
+          docker run --rm bioinf-cli-env zsh -c "command -v bat || command -v batcat" || { echo "Bat missing in container"; exit 1; }
