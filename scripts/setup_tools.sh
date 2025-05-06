@@ -21,7 +21,7 @@ fi
 log_info "Using $INSTALLER to install CLI tools..."
 
 # Define tools to install (removed yq)
-TOOLS=("bat" "eza" "ripgrep" "fd-find" "jq" "fzf" "htop" "tmux" "zoxide")
+TOOLS=("bat" "eza" "ripgrep" "fd" "jq" "fzf" "htop" "tmux" "zoxide")
 
 install_tools_brew() {
     brew update
@@ -36,7 +36,7 @@ install_tools_apt() {
         if [[ "$tool" == "bat" ]]; then
             sudo apt-get install -y bat
             sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
-        elif [[ "$tool" == "fd-find" ]]; then
+        elif [[ "$tool" == "fd" ]]; then
             sudo apt-get install -y fd-find
             sudo ln -sf /usr/bin/fd-find /usr/local/bin/fd
         else
