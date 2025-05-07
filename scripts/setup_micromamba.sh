@@ -30,7 +30,7 @@ install_micromamba() {
     log_info "Detected platform: $platform (OS: $os, Arch: $arch)"
 
     # Platform-specific download URLs
-    ${SHELL}" <(curl -L micro.mamba.pm/install.sh)"
+    ${SHELL}" <(curl -L https://micro.mamba.pm/install.sh)"
     # Init zsh config
     ./micromamba shell init -s zsh -r ~/micromamba
     source ~/.zshrc
