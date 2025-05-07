@@ -42,18 +42,10 @@ jobs:
 
       - name: Set permissions
         run: chmod +x ./install.sh
-
       - name: Copy config template
         run: cp config.ini.template ci-config.ini
-
       - name: Run non-interactive installation
         run: ./install.sh --non-interactive --config ci-config.ini || { echo "MacOS install failed"; exit 1; }
-      - name: Debug installation paths
-        run: |
-          echo "Listing $HOME/.local/bin contents:"
-          ls -al $HOME/.local/bin
-          echo "Listing $HOME/micromamba/bin contents:"
-          ls -al $HOME/micromamba/bin
       - name: Debug .zshrc
         run: |
           echo "Contents of ~/.zshrc:"
@@ -61,7 +53,6 @@ jobs:
       - name: Verify installation
         run: |
           echo "Current PATH: $PATH"
-          export PATH="$HOME/.local/bin:$HOME/micromamba/bin:$PATH"
           source "$HOME/.zshrc" || { echo "MacOS sourcing ~/.zshrc failed"; exit 1; }
           echo "Updated PATH: $PATH"
           command -v bat || { echo "MacOS Bat not found"; exit 1; }
