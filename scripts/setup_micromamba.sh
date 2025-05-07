@@ -81,7 +81,7 @@ create_environment() {
 # alias bioinf="micromamba activate $ENV_NAME"
 # # <<< micromamba initialize <<<
 # EOF
-    fi
+#    fi
 
     echo "[INFO] Bioinformatics environment setup complete."
     echo "[INFO] To activate, restart shell and use: bioinf"
