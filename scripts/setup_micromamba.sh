@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Micromamba and bioinformatics environment setup
 set -euo pipefail
 
