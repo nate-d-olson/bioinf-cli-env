@@ -249,7 +249,7 @@ install_palette_selector() {
 
 install_micromamba() {
     log_info "Installing micromamba..."
-    bash "$SCRIPTS_DIR/setup_micromamba.sh"
+    bash "$SCRIPTS_DIR/setup_micromamba.sh" install
     
     if [[ $? -eq 0 ]]; then
         log_info "Setting up bioinformatics environment with micromamba..."

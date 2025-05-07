@@ -1,101 +1,85 @@
-#!/bin/bash
-# Micromamba and bioinformatics environment setup
+#!/usr/bin/env bash
+# Micromamba setup and bioinformatics environment management script
 set -euo pipefail
 
-# Define locations dynamically
-MICROMAMBA_BIN="$(command -v micromamba || true)"
-MICROMAMBA_ROOT="$HOME/micromamba"
+# Configuration and defaults
+MICROMAMBA_ROOT="${HOME}/micromamba"
 BIN_DIR="${HOME}/.local/bin"
 CONFIG_FILE="${2:-}"
+SHELL_NAME="$(basename "${SHELL}")"
+ENV_NAME=""
 
-mkdir -p "$BIN_DIR"
+# Logging function for consistent messaging
+log_info() { echo "[INFO] $1"; }
+log_error() { echo "[ERROR] $1" >&2; exit 1; }
 
-install_micromamba(){
-    log_info "Installing micromamba..."
-    ## Platform agnostic install
-    ${SHELL}" <(curl -L https://micro.mamba.pm/install.sh)"
-    ## TODO add error if install fails
-}
+# Ensure required directories are created
+mkdir -p "${BIN_DIR}"
 
-# Function to ensure micromamba is available
-verify_micromamba() {
-    if [[ -z "$MICROMAMBA_BIN" ]]; then
-        echo "Micromamba executable not found. Installing from https://micro.mamba.pm/install.sh."
-        install_micromamba
+# Install Micromamba only if it isn't already available
+install_micromamba() {
+    if ! command -v micromamba &>/dev/null; then
+        log_info "Installing Micromamba..."
+        bash <(curl -fsSL https://micro.mamba.pm/install.sh) || log_error "Micromamba installation failed."
     else
-        echo "[INFO] Micromamba found at $MICROMAMBA_BIN"
+        log_info "Micromamba is already installed."
     fi
 }
 
-# Install micromamba if not already installed
-micromamba_setup() {
-    verify_micromamba
-
-    install_micromamba
-
-    log_info "Initializing config..."
-    ./micromamba shell init -s zsh -r ~/micromamba
-    source ~/.zshrc
-
-    log_info "Setting channel priority..."
-    micromamba config append channels conda-forge
-    micromamba config set channel_priority strict
+# Initialize shell integration
+initialize_shell() {
+    log_info "Initializing Micromamba for shell (${SHELL_NAME})..."
+    "${MICROMAMBA_ROOT}/bin/micromamba" shell init -s "${SHELL_NAME}" -r "${MICROMAMBA_ROOT}"
+    log_info "Micromamba shell initialization complete. Please restart your shell."
 }
 
-# Create a bioinformatics environment from config file
-create_environment() {
-    verify_micromamba
+# Configure Micromamba channels
+configure_micromamba() {
+    log_info "Configuring Micromamba..."
+    "${MICROMAMBA_ROOT}/bin/micromamba" config append channels conda-forge
+    "${MICROMAMBA_ROOT}/bin/micromamba" config set channel_priority strict
+}
 
-    if [[ -z "$CONFIG_FILE" || ! -f "$CONFIG_FILE" ]]; then
-        echo "[ERROR] Environment configuration file missing or invalid."
-        exit 1
-    fi
+# Extract environment name from the provided configuration file reliably
+parse_env_name() {
+    ENV_NAME=$(grep -E '^name:' "${CONFIG_FILE}" | head -1 | awk '{print $2}' | tr -d '[:space:]')
+    [[ -z "${ENV_NAME}" ]] && log_error "Environment name not found in ${CONFIG_FILE}"
+}
 
-    echo "[INFO] Creating bioinformatics environment from $CONFIG_FILE..."
+# Create or update Micromamba environment from a provided YAML configuration
+create_or_update_env() {
+    [[ -f "${CONFIG_FILE}" ]] || log_error "Environment configuration file '${CONFIG_FILE}' not found."
+    parse_env_name
 
-    ENV_NAME=$(grep -m 1 "^name:" "$CONFIG_FILE" | cut -d ':' -f 2 | tr -d ' ')
-
-    if [[ -z "$ENV_NAME" ]]; then
-        echo "[ERROR] Could not determine environment name from $CONFIG_FILE"
-        exit 1
-    fi
-
-    # Check if environment exists
-    if micromamba env list | grep -q "$ENV_NAME"; then
-        echo "[INFO] Environment $ENV_NAME already exists, updating..."
-        micromamba update -y -f "$CONFIG_FILE"
+    if "${MICROMAMBA_ROOT}/bin/micromamba" env list | grep -q "${ENV_NAME}"; then
+        log_info "Updating existing environment '${ENV_NAME}'..."
+        "${MICROMAMBA_ROOT}/bin/micromamba" update -y -f "${CONFIG_FILE}"
     else
-        echo "[INFO] Creating new environment $ENV_NAME..."
-        micromamba create -y -f "$CONFIG_FILE"
+        log_info "Creating new environment '${ENV_NAME}'..."
+        "${MICROMAMBA_ROOT}/bin/micromamba" create -y -f "${CONFIG_FILE}"
     fi
-    ## %%TODO%% fix initialization - not sure how or if the following conflicts with the micromamba shell init command
-    # Add micromamba initialization to .zshrc
-#     if ! grep -q "# >>> micromamba initialize >>>" "$HOME/.zshrc"; then
-#         echo "[INFO] Adding micromamba activation to .zshrc."
-#         MICROMAMBA_BIN_DIR=$(dirname "$MICROMAMBA_BIN")
-#         cat >>"$HOME/.zshrc" <<EOF
-# # >>> micromamba initialize >>>
-# export MAMBA_EXE="$MICROMAMBA_BIN"
-# export MAMBA_ROOT_PREFIX="$MICROMAMBA_ROOT"
-# eval "\$($MICROMAMBA_BIN shell hook -s zsh -p \$MAMBA_ROOT_PREFIX)"
-# alias bioinf="micromamba activate $ENV_NAME"
-# # <<< micromamba initialize <<<
-# EOF
-#    fi
 
-    echo "[INFO] Bioinformatics environment setup complete."
-    echo "[INFO] To activate, restart shell and use: bioinf"
+    log_info "Environment '${ENV_NAME}' setup complete."
 }
 
-# Execution based on provided action
-ACTION="${1:-}"
-case "$ACTION" in
-    "env-create")
-        create_environment
-        ;;
-    *)
-        echo "[ERROR] Unknown action: $ACTION"
-        echo "Usage: $0 env-create [config-file-path]"
-        exit 1
-        ;;
-esac
+# Handle command-line arguments
+main() {
+    local ACTION="${1:-}"
+
+    case "${ACTION}" in
+        install)
+            install_micromamba
+            initialize_shell
+            configure_micromamba
+            ;;
+        env-create)
+            install_micromamba
+            create_or_update_env
+            ;;
+        *)
+            log_error "Invalid or missing action.\nUsage: $0 {install | env-create <config-file>}"
+            ;;
+    esac
+}
+
+main "$@"
