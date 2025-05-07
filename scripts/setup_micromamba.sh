@@ -10,17 +10,41 @@ CONFIG_FILE="${2:-}"
 
 mkdir -p "$BIN_DIR"
 
-# Function to ensure micromamba is available
-verify_micromamba() {
-    if [[ -z "$MICROMAMBA_BIN" ]]; then
-        echo "[ERROR] Micromamba executable not found. Ensure micromamba is installed first."
-        exit 1
-    else
-        echo "[INFO] Micromamba found at $MICROMAMBA_BIN"
+# Install micromamba if not already installed
+install_micromamba() {
+    if cmd_exists micromamba; then
+        log_success "Micromamba is already installed."
+        return 0
     fi
+
+    log_info "Installing micromamba..."
+
+    # Get platform information
+    local platform=$(detect_platform)
+    local os=$(get_os "$platform")
+    local arch=$(get_arch "$platform")
+
+    log_info "Detected platform: $platform (OS: $os, Arch: $arch)"
+
+    # Platform-specific download URLs
+    ${SHELL}" <(curl -L https://micro.mamba.pm/install.sh)"
+    # Init zsh config
+    ./micromamba shell init -s zsh -r ~/micromamba
+    source ~/.zshrc
+    ## Setting channels
+    micromamba config append channels conda-forge
+    micromamba config set channel_priority strict
+    
+    # Move to the bin directory
+   # if [[ -f bin/micromamba ]]; then
+    #    mv bin/micromamba "$BIN_DIR/"
+     #   rm -rf bin
+    #else
+    #    die "Failed to download micromamba"
+    #fi
 }
 
-# Function to create bioinformatics environment
+# Create a bioinformatics environment from config file
 create_environment() {
     verify_micromamba
 
