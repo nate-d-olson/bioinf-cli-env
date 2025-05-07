@@ -1,0 +1,3 @@
+# micromamba packages issues
+Micromamba installation issues identified with packages 'dipcall' (requires unavailable 'unimap') and 'truvari' (Python compatibility issues). These packages are excluded from automatic installations.
+

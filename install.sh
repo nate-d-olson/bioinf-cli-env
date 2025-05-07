@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Bioinformatics CLI Environment Installer
 # This script installs a comprehensive CLI environment for bioinformaticians
 

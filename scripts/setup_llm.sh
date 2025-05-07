@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Azure OpenAI CLI integration setup
 set -euo pipefail
 
