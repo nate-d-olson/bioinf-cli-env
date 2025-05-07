@@ -10,38 +10,36 @@ CONFIG_FILE="${2:-}"
 
 mkdir -p "$BIN_DIR"
 
-# Install micromamba if not already installed
-install_micromamba() {
-    if cmd_exists micromamba; then
-        log_success "Micromamba is already installed."
-        return 0
-    fi
-
+install_micromamba(){
     log_info "Installing micromamba..."
-
-    # Get platform information
-    local platform=$(detect_platform)
-    local os=$(get_os "$platform")
-    local arch=$(get_arch "$platform")
-
-    log_info "Detected platform: $platform (OS: $os, Arch: $arch)"
-
-    # Platform-specific download URLs
+    ## Platform agnostic install
     ${SHELL}" <(curl -L https://micro.mamba.pm/install.sh)"
-    # Init zsh config
+    ## TODO add error if install fails
+}
+
+# Function to ensure micromamba is available
+verify_micromamba() {
+    if [[ -z "$MICROMAMBA_BIN" ]]; then
+        echo "Micromamba executable not found. Installing from https://micro.mamba.pm/install.sh."
+        install_micromamba
+    else
+        echo "[INFO] Micromamba found at $MICROMAMBA_BIN"
+    fi
+}
+
+# Install micromamba if not already installed
+micromamba_setup() {
+    verify_micromamba
+
+    install_micromamba
+
+    log_info "Initializing config..."
     ./micromamba shell init -s zsh -r ~/micromamba
     source ~/.zshrc
-    ## Setting channels
+
+    log_info "Setting channel priority..."
     micromamba config append channels conda-forge
     micromamba config set channel_priority strict
-    
-    # Move to the bin directory
-   # if [[ -f bin/micromamba ]]; then
-    #    mv bin/micromamba "$BIN_DIR/"
-     #   rm -rf bin
-    #else
-    #    die "Failed to download micromamba"
-    #fi
 }
 
 # Create a bioinformatics environment from config file
@@ -70,19 +68,19 @@ create_environment() {
         echo "[INFO] Creating new environment $ENV_NAME..."
         micromamba create -y -f "$CONFIG_FILE"
     fi
-
+    ## %%TODO%% fix initialization - not sure how or if the following conflicts with the micromamba shell init command
     # Add micromamba initialization to .zshrc
-    if ! grep -q "# >>> micromamba initialize >>>" "$HOME/.zshrc"; then
-        echo "[INFO] Adding micromamba activation to .zshrc."
-        MICROMAMBA_BIN_DIR=$(dirname "$MICROMAMBA_BIN")
-        cat >>"$HOME/.zshrc" <<EOF
-# >>> micromamba initialize >>>
-export MAMBA_EXE="$MICROMAMBA_BIN"
-export MAMBA_ROOT_PREFIX="$MICROMAMBA_ROOT"
-eval "\$($MICROMAMBA_BIN shell hook -s zsh -p \$MAMBA_ROOT_PREFIX)"
-alias bioinf="micromamba activate $ENV_NAME"
-# <<< micromamba initialize <<<
-EOF
+#     if ! grep -q "# >>> micromamba initialize >>>" "$HOME/.zshrc"; then
+#         echo "[INFO] Adding micromamba activation to .zshrc."
+#         MICROMAMBA_BIN_DIR=$(dirname "$MICROMAMBA_BIN")
+#         cat >>"$HOME/.zshrc" <<EOF
+# # >>> micromamba initialize >>>
+# export MAMBA_EXE="$MICROMAMBA_BIN"
+# export MAMBA_ROOT_PREFIX="$MICROMAMBA_ROOT"
+# eval "\$($MICROMAMBA_BIN shell hook -s zsh -p \$MAMBA_ROOT_PREFIX)"
+# alias bioinf="micromamba activate $ENV_NAME"
+# # <<< micromamba initialize <<<
+# EOF
     fi
 
     echo "[INFO] Bioinformatics environment setup complete."
