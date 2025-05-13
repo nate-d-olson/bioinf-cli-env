@@ -12,9 +12,9 @@ install_tools_brew() {
 }
 
 install_tools_apt() {
-    apt-get update
+    sudo apt-get update
     # Note: using 'exa' instead of 'eza'
-    apt-get install -y bat exa ripgrep fd-find jq fzf htop tmux zoxide python3-yq || { log_warning "Some tools may not have installed. Verify manually."; }
+    sudo apt-get install -y bat exa ripgrep fd-find jq fzf htop tmux zoxide python3-yq || { log_warning "Some tools may not have installed. Verify manually."; }
 }
 
 install_tools_userspace() {
