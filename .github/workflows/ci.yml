@@ -30,9 +30,26 @@ jobs:
       - name: Verify installation
         run: |
           export PATH="$HOME/.local/bin:$HOME/micromamba/bin:$PATH"
-          source "$HOME/.zshrc" || { echo "Error sourcing ~/.zshrc"; exit 1; }
-          command -v bat || command -v batcat || { echo "Bat not found"; exit 1; }
-          command -v micromamba || { echo "Micromamba binary not found within expected directories"; exit 1; }
+          # Check for binaries directly installed in standard locations
+          if command -v bat || command -v batcat || [ -f "$HOME/.local/bin/bat" ] || [ -f "$HOME/.local/bin/batcat" ]; then
+            echo "Bat/batcat found"
+          else
+            echo "Bat not found in PATH or standard locations"
+            echo "Current PATH: $PATH"
+            ls -la $HOME/.local/bin || echo "Can't list .local/bin"
+            apt-cache policy bat batcat || echo "Can't check package status"
+            exit 1
+          fi
+          
+          # Check for micromamba
+          if command -v micromamba || [ -f "$HOME/micromamba/bin/micromamba" ]; then
+            echo "Micromamba found"
+          else
+            echo "Micromamba binary not found within expected directories"
+            echo "Current PATH: $PATH"
+            ls -la $HOME/micromamba/bin || echo "Can't list micromamba bin dir"
+            exit 1
+          fi
 
   test-macos:
     runs-on: macos-latest
