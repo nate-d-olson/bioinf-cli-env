@@ -43,7 +43,8 @@ nano config.ini
 Detailed documentation is available in the following:
 
 - [User Guide](docs/USER_GUIDE.md)
-- [Development Guide](docs/DEVELOPER_GUIDE.md)- [Customization](docs/CUSTOMIZATION.md)
+- [Development Guide](docs/DEVELOPER_GUIDE.md)
+- [Customization](docs/CUSTOMIZATION.md)
 - [Docker Usage](docs/DOCKER.md)
 - [Local Testing](docs/LOCAL_TESTING.md)
 - [CI/CD Instructions](docs/CI_CD.md)

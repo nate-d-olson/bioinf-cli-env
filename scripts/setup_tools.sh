@@ -23,14 +23,24 @@ install_tools_userspace() {
     mkdir -p "$bin_dir"
 
     # Detect OS and architecture for binary downloads
-    local os arch
-    os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-    arch="$(uname -m)"
-    case "$arch" in
-        x86_64)  arch="x86_64" ;;
-        aarch64|arm64) arch="aarch64" ;;
-        *) log_warning "Unsupported architecture: $arch"; return 1 ;;
+    local os arch triple
+    case "$(uname -s)" in
+        Linux*)  os="linux"  ;;
+        Darwin*) os="macos"  ;;
+        *) log_warning "Unsupported OS: $(uname -s)"; return 1 ;;
     esac
+    case "$(uname -m)" in
+        x86_64)         arch="x86_64"  ;;
+        aarch64|arm64)  arch="aarch64" ;;
+        *) log_warning "Unsupported architecture: $(uname -m)"; return 1 ;;
+    esac
+
+    # Build the target triple used by GitHub release archives
+    if [[ "$os" == "macos" ]]; then
+        triple="${arch}-apple-darwin"
+    else
+        triple="${arch}-unknown-linux-musl"
+    fi
 
     # fzf: has its own install script
     if ! command -v fzf &>/dev/null; then
@@ -53,7 +63,7 @@ install_tools_userspace() {
     if ! command -v bat &>/dev/null && ! command -v batcat &>/dev/null; then
         log_info "Installing bat..."
         local bat_version="0.24.0"
-        local bat_archive="bat-v${bat_version}-${arch}-unknown-${os}-musl"
+        local bat_archive="bat-v${bat_version}-${triple}"
         curl -fsSL "https://github.com/sharkdp/bat/releases/download/v${bat_version}/${bat_archive}.tar.gz" \
             | tar -xz -C /tmp \
             && install -m0755 "/tmp/${bat_archive}/bat" "$bin_dir/bat" \
@@ -65,7 +75,7 @@ install_tools_userspace() {
     if ! command -v rg &>/dev/null; then
         log_info "Installing ripgrep..."
         local rg_version="14.1.0"
-        local rg_archive="ripgrep-${rg_version}-${arch}-unknown-${os}-musl"
+        local rg_archive="ripgrep-${rg_version}-${triple}"
         curl -fsSL "https://github.com/BurntSushi/ripgrep/releases/download/${rg_version}/${rg_archive}.tar.gz" \
             | tar -xz -C /tmp \
             && install -m0755 "/tmp/${rg_archive}/rg" "$bin_dir/rg" \
@@ -77,7 +87,7 @@ install_tools_userspace() {
     if ! command -v fd &>/dev/null && ! command -v fdfind &>/dev/null; then
         log_info "Installing fd..."
         local fd_version="9.0.0"
-        local fd_archive="fd-v${fd_version}-${arch}-unknown-${os}-musl"
+        local fd_archive="fd-v${fd_version}-${triple}"
         curl -fsSL "https://github.com/sharkdp/fd/releases/download/v${fd_version}/${fd_archive}.tar.gz" \
             | tar -xz -C /tmp \
             && install -m0755 "/tmp/${fd_archive}/fd" "$bin_dir/fd" \
