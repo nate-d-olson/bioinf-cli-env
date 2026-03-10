@@ -4,7 +4,7 @@
 
 This repository is geared toward developing a comprehensive command-line environment to enhance productivity in bioinformatics pipeline development. Currently, this project is considered an **alpha release**, undergoing active development and debugging. Feel free to explore, test, and contribute, but exercise caution regarding system configurations due to ongoing changes.
 
-For detailed developer guidance, see [`GOOSE_DEV_SESSION_GUIDE.md`](GOOSE_DEV_SESSION_GUIDE.md).
+For detailed developer guidance, see [`docs/GOOSE_DEV_SESSION_GUIDE.md`](docs/GOOSE_DEV_SESSION_GUIDE.md).
 
 ---
 
@@ -28,7 +28,7 @@ nano config.ini
 
 ## Key Features
 
-- 🛠 **Modern CLI Tools:** Enhanced file navigation (`exa`), file viewing (`bat`), fast searching (`ripgrep`, `fd-find`), and more.
+- 🛠 **Modern CLI Tools:** Enhanced file navigation (`eza`), file viewing (`bat`), fast searching (`ripgrep`, `fd-find`), and more.
 - 🎨 **Shell Enhancement:** Oh My Zsh with Powerlevel10k theme, syntax highlighting, autocompletion.
 - 🌿 **Package Management:** Micromamba for managing bioinformatics software.
 - 📊 **Workflow Monitoring:** Track and visualize Snakemake, Nextflow, Cromwell (WDL) jobs.
@@ -43,8 +43,7 @@ nano config.ini
 Detailed documentation is available in the following:
 
 - [User Guide](docs/USER_GUIDE.md)
-- [Development Guide](docs/DEVELOPER_GUIDE.md)
-- [Customization](docs/CUSTOMIZATION.md)
+- [Development Guide](docs/DEVELOPER_GUIDE.md)- [Customization](docs/CUSTOMIZATION.md)
 - [Docker Usage](docs/DOCKER.md)
 - [Local Testing](docs/LOCAL_TESTING.md)
 - [CI/CD Instructions](docs/CI_CD.md)

@@ -328,10 +328,9 @@ main() {
         install_micromamba
     fi
     
-    # Temporarily disabled Azure OpenAI CLI setup to avoid CI errors
-# if [[ "$INSTALL_AZURE_LLM" == "true" ]] || prompt "Install Azure OpenAI CLI integration?"; then
-#     install_azure_llm
-# fi
+    if [[ "$INSTALL_AZURE_LLM" == "true" ]] || prompt "Install Azure OpenAI CLI integration?" "N"; then
+        install_azure_llm
+    fi
     
     # Final message
     echo -e "\n${GREEN}┌────────────────────────────────────────────┐${NC}"

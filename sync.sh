@@ -76,6 +76,7 @@ list_hosts() {
     grep -v "^#" "$HOSTS_FILE" | grep -v "^$" | while read -r line; do
         # Fixed SC2155 by separating declaration and assignment
         local nickname
+        local host
         nickname=$(echo "$line" | awk '{print $1}')
         host=$(echo "$line" | awk '{print $2}')
         log_info "  $nickname → $host"

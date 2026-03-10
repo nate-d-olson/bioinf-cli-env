@@ -63,7 +63,7 @@ RUN mkdir -p /home/$USERNAME/.local/bin \
     && sed -i 's/INSTALL_MICROMAMBA=.*/INSTALL_MICROMAMBA=true/' /home/$USERNAME/bioinf-cli-env/config.ini \
     && sed -i 's/INSTALL_JOB_MONITORING=.*/INSTALL_JOB_MONITORING=true/' /home/$USERNAME/bioinf-cli-env/config.ini \
     && sed -i 's/INSTALL_PALETTE_SELECTOR=.*/INSTALL_PALETTE_SELECTOR=true/' /home/$USERNAME/bioinf-cli-env/config.ini \
-    && sed -i 's/INSTALL_AZURE_OPENAI=.*/INSTALL_AZURE_OPENAI=false/' /home/$USERNAME/bioinf-cli-env/config.ini
+    && sed -i 's/INSTALL_AZURE_LLM=.*/INSTALL_AZURE_LLM=false/' /home/$USERNAME/bioinf-cli-env/config.ini
 
 # Install the environment
 RUN ./install.sh --non-interactive --config config.ini
@@ -83,8 +83,9 @@ RUN echo '#!/bin/zsh' > /home/$USERNAME/entrypoint.sh \
     && echo 'else' >> /home/$USERNAME/entrypoint.sh \
     && echo '    exec "$@"' >> /home/$USERNAME/entrypoint.sh \
     && echo 'fi' >> /home/$USERNAME/entrypoint.sh \
-    && chmod +x /home/$USERNAME/entrypoint.sh
+    && chmod +x /home/$USERNAME/entrypoint.sh \
+    && sudo cp /home/$USERNAME/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Set final working directory and entrypoint
 WORKDIR /home/$USERNAME
-ENTRYPOINT ["/home/biouser/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

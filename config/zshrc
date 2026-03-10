@@ -1,3 +1,8 @@
+# Enable Powerlevel10k instant prompt (must appear before any output or shell init)
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
 # Path to Oh My Zsh installation
 export ZSH="$HOME/.oh-my-zsh"
 
@@ -17,10 +22,7 @@ plugins=(
 # Load Oh My Zsh
 source $ZSH/oh-my-zsh.sh
 
-# Powerlevel10k instant prompt
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
+# Load Powerlevel10k configuration
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # Core init
